@@ -133,3 +133,35 @@ body {
 .spinner-wrap {
   min-height: 3rem;
 }
+
+
+.cookie-consent-banner {
+  position: fixed;
+  left: 1rem;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 1080;
+  background: #ffffff;
+  border: 1px solid #dbe2ea;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.15);
+  padding: 0.9rem 1rem;
+}
+
+.cookie-consent-content {
+  display: flex;
+  gap: 0.9rem;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  color: var(--brand-dark);
+}
+
+.cookie-consent-content p {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.cookie-consent-content a {
+  color: var(--brand-primary);
+}
