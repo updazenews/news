@@ -129,3 +129,7 @@ body {
     margin-top: 4.5rem;
   }
 }
+
+.spinner-wrap {
+  min-height: 3rem;
+}
