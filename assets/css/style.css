@@ -93,6 +93,19 @@ body {
   background: #fff;
 }
 
+.social-links a {
+  color: var(--brand-primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.social-links a:hover,
+.social-links a:focus {
+  color: var(--brand-primary-dark);
+  text-decoration: underline;
+}
+
+
 .admin-shell {
   min-height: 100vh;
   background: #f1f5f9;
