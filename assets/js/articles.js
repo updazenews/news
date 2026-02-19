@@ -1,14 +1,5 @@
 import { db } from "./firebase-config.js";
-import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  limit,
-  orderBy,
-  query,
-  where
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { collection, doc, getDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const fallbackArticles = [
   {
@@ -19,17 +10,32 @@ const fallbackArticles = [
     category: "technology",
     author: "Updaze Desk",
     imageUrl: "",
+    status: "published",
     publishedAt: { toDate: () => new Date() }
   }
 ];
 
+function parsePublishedAt(article) {
+  if (article?.publishedAt?.toDate) return article.publishedAt.toDate();
+  if (article?.publishedAt?.seconds) return new Date(article.publishedAt.seconds * 1000);
+  return new Date(article?.publishedAt || 0);
+}
+
+function sortByPublishedDateDesc(articles) {
+  return [...articles].sort((a, b) => parsePublishedAt(b) - parsePublishedAt(a));
+}
+
 export async function fetchArticles(category = null) {
   try {
     const articlesRef = collection(db, "articles");
-    const constraints = [where("status", "==", "published"), orderBy("publishedAt", "desc"), limit(24)];
-    if (category) constraints.unshift(where("category", "==", category));
-    const snap = await getDocs(query(articlesRef, ...constraints));
-    return snap.docs.map((item) => item.data());
+    const snap = await getDocs(articlesRef);
+
+    const publishedArticles = snap.docs
+      .map((item) => item.data())
+      .filter((entry) => entry?.status === "published")
+      .filter((entry) => (category ? entry?.category === category : true));
+
+    return sortByPublishedDateDesc(publishedArticles).slice(0, 24);
   } catch {
     return category ? fallbackArticles.filter((entry) => entry.category === category) : fallbackArticles;
   }

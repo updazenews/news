@@ -3,12 +3,13 @@ import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-aut
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "YOUR_FIREBASE_API_KEY",
-  authDomain: "YOUR_FIREBASE_PROJECT.firebaseapp.com",
-  projectId: "YOUR_FIREBASE_PROJECT",
-  storageBucket: "YOUR_FIREBASE_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_FIREBASE_SENDER_ID",
-  appId: "YOUR_FIREBASE_APP_ID"
+  apiKey: "AIzaSyCZSyty8XgrkBycReUHXzZZJgvajJMatJQ",
+  authDomain: "updaze-jobs.firebaseapp.com",
+  projectId: "updaze-jobs",
+  storageBucket: "updaze-jobs.firebasestorage.app",
+  messagingSenderId: "208744900105",
+  appId: "1:208744900105:web:84456f914b2ae57ee7fad8",
+  measurementId: "G-WM1KXZD6DL"
 };
 
 const app = initializeApp(firebaseConfig);

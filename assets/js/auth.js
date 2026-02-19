@@ -57,7 +57,7 @@ if (loginForm) {
         throw new Error("Unauthorized role.");
       }
 
-      window.location.href = "/admin/dashboard.html";
+      window.location.href = "/admin/index.html";
     } catch (error) {
       loginMessage.textContent = `Login failed: ${error.message}`;
       loginMessage.className = "small mb-3 text-danger";
