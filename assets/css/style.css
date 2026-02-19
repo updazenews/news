@@ -1,0 +1,79 @@
+:root {
+  --brand-primary: #0d6efd;
+  --brand-dark: #0f172a;
+  --muted: #6c757d;
+}
+
+body {
+  font-family: "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: #1f2937;
+  background-color: #f8fafc;
+}
+
+.navbar-brand {
+  font-weight: 800;
+  letter-spacing: 0.2px;
+}
+
+.main-content {
+  margin-top: 5rem;
+}
+
+.hero-card {
+  border: 0;
+  border-radius: 0.9rem;
+  background: linear-gradient(135deg, #0d6efd, #4f46e5);
+  color: #fff;
+}
+
+.article-card {
+  border: 0;
+  border-radius: 0.9rem;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.article-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.12);
+}
+
+.article-meta {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.section-title {
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.site-footer {
+  border-top: 1px solid #e5e7eb;
+  color: #6b7280;
+  background: #fff;
+}
+
+.admin-shell {
+  min-height: 100vh;
+  background: #f1f5f9;
+}
+
+.admin-panel {
+  border: 0;
+  border-radius: 1rem;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+}
+
+.editor-preview {
+  border: 1px dashed #cbd5e1;
+  border-radius: 0.8rem;
+  background: #fff;
+  padding: 1rem;
+}
+
+@media (max-width: 767.98px) {
+  .main-content {
+    margin-top: 4.5rem;
+  }
+}
