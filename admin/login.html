@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin Login | Updaze News</title>
+  <meta name="robots" content="noindex,nofollow" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous" />
+  <link rel="stylesheet" href="../assets/css/style.css" />
+</head>
+<body class="admin-shell d-flex align-items-center">
+  <main class="container">
+    <section class="row justify-content-center">
+      <div class="col-md-6 col-lg-5">
+        <article class="card admin-panel p-4">
+          <h1 class="h3 mb-3">Admin Portal Login</h1>
+          <p class="text-muted">Access restricted to admin, super admin, and editor roles.</p>
+          <form id="loginForm" novalidate>
+            <div class="mb-3">
+              <label class="form-label" for="email">Email</label>
+              <input class="form-control" id="email" name="email" type="email" required />
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="password">Password</label>
+              <input class="form-control" id="password" name="password" type="password" minlength="6" required />
+            </div>
+            <div id="loginMessage" class="small mb-3" role="status" aria-live="polite"></div>
+            <button class="btn btn-primary w-100" type="submit">Sign in</button>
+          </form>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="../assets/js/auth.js"></script>
+</body>
+</html>
