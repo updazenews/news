@@ -1,12 +1,39 @@
-import { fetchArticleBySlug, fetchArticles, renderArticleCards } from "./articles.js";
+import {
+  fetchArticleBySlug,
+  fetchArticles,
+  fetchMostViewedArticle,
+  getArticleViewCount,
+  incrementArticleView,
+  renderArticleCards
+} from "./articles.js";
 
 const params = new URLSearchParams(window.location.search);
 
 async function initHomePage() {
   const homeList = document.getElementById("homeArticleList");
   if (!homeList) return;
+
   const articles = await fetchArticles();
   renderArticleCards("homeArticleList", articles);
+
+  const topStory = await fetchMostViewedArticle();
+  if (!topStory) return;
+
+  const topStoryCategory = document.getElementById("topStoryCategory");
+  const heroTitle = document.getElementById("hero-title");
+  const heroSummary = document.getElementById("hero-summary");
+  const heroLink = document.getElementById("hero-link");
+
+  if (topStoryCategory) topStoryCategory.textContent = `Top Story • ${topStory.category || "general"}`;
+  if (heroTitle) heroTitle.textContent = topStory.title || "Top Story";
+  if (heroSummary) {
+    heroSummary.textContent = `${topStory.excerpt || "Read the most viewed story right now."} (${getArticleViewCount(topStory)} views)`;
+  }
+
+  if (heroLink && topStory.slug) {
+    heroLink.href = `article.html?slug=${topStory.slug}`;
+    heroLink.classList.remove("d-none");
+  }
 }
 
 async function initCategoryPage() {
@@ -40,7 +67,14 @@ async function initArticlePage() {
   document.title = `${article.title} | Updaze News`;
   document.getElementById("articleTitle").textContent = article.title;
   document.getElementById("articleCategory").textContent = article.category || "general";
-  document.getElementById("articleMeta").textContent = `${article.author || "Updaze Desk"} • ${new Date(article.publishedAt?.seconds ? article.publishedAt.seconds * 1000 : article.publishedAt || Date.now()).toLocaleString()}`;
+
+  const publishedDate = new Date(
+    article.publishedAt?.seconds ? article.publishedAt.seconds * 1000 : article.publishedAt || Date.now()
+  ).toLocaleString();
+  const currentViews = getArticleViewCount(article);
+
+  document.getElementById("articleMeta").textContent = `${article.author || "Updaze Desk"} • ${publishedDate} • ${currentViews} views`;
+
   articleBody.innerHTML = article.content
     .split("\n")
     .filter(Boolean)
@@ -52,6 +86,8 @@ async function initArticlePage() {
     image.src = article.imageUrl;
     image.classList.remove("d-none");
   }
+
+  await incrementArticleView(slug);
 }
 
 function initFooterYear() {

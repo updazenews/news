@@ -1,5 +1,13 @@
 import { db } from "./firebase-config.js";
-import { collection, doc, getDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  increment,
+  serverTimestamp,
+  updateDoc
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const fallbackArticles = [
   {
@@ -11,6 +19,7 @@ const fallbackArticles = [
     author: "Updaze Desk",
     imageUrl: "",
     status: "published",
+    viewCount: 0,
     publishedAt: { toDate: () => new Date() }
   }
 ];
@@ -23,6 +32,10 @@ function parsePublishedAt(article) {
 
 function sortByPublishedDateDesc(articles) {
   return [...articles].sort((a, b) => parsePublishedAt(b) - parsePublishedAt(a));
+}
+
+export function getArticleViewCount(article) {
+  return Number.isFinite(Number(article?.viewCount)) ? Number(article.viewCount) : 0;
 }
 
 export async function fetchArticles(category = null) {
@@ -41,6 +54,13 @@ export async function fetchArticles(category = null) {
   }
 }
 
+export async function fetchMostViewedArticle() {
+  const articles = await fetchArticles();
+  if (!articles.length) return null;
+
+  return [...articles].sort((a, b) => getArticleViewCount(b) - getArticleViewCount(a))[0];
+}
+
 export async function fetchArticleBySlug(slug) {
   try {
     const articleRef = doc(db, "articles", slug);
@@ -51,6 +71,18 @@ export async function fetchArticleBySlug(slug) {
   }
 
   return fallbackArticles.find((entry) => entry.slug === slug) || null;
+}
+
+export async function incrementArticleView(slug) {
+  try {
+    const articleRef = doc(db, "articles", slug);
+    await updateDoc(articleRef, {
+      viewCount: increment(1),
+      updatedAt: serverTimestamp()
+    });
+  } catch {
+    // ignore view tracking failures
+  }
 }
 
 export function renderArticleCards(containerId, articles) {
@@ -72,7 +104,7 @@ export function renderArticleCards(containerId, articles) {
             <p class="text-uppercase text-primary small fw-semibold mb-2">${article.category || "general"}</p>
             <h3 class="h5">${article.title}</h3>
             <p class="text-muted">${article.excerpt || "Read the latest update from Updaze News."}</p>
-            <p class="article-meta mt-auto mb-3">${article.author || "Updaze Desk"} • ${dateValue.toLocaleDateString()}</p>
+            <p class="article-meta mt-auto mb-3">${article.author || "Updaze Desk"} • ${dateValue.toLocaleDateString()} • ${getArticleViewCount(article)} views</p>
             <a class="btn btn-sm btn-outline-primary" href="article.html?slug=${article.slug}">Read Article</a>
           </div>
         </div>

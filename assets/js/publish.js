@@ -59,7 +59,7 @@ async function loadPublishedArticles() {
     const snap = await getDocs(publishedQuery);
 
     if (snap.empty) {
-      publishedArticlesBody.innerHTML = '<tr><td colspan="5" class="text-muted">No published articles yet.</td></tr>';
+      publishedArticlesBody.innerHTML = '<tr><td colspan="6" class="text-muted">No published articles yet.</td></tr>';
       publishedArticlesStatus.textContent = "No articles published yet.";
       return;
     }
@@ -75,6 +75,7 @@ async function loadPublishedArticles() {
             <td class="text-uppercase">${article.category || "general"}</td>
             <td>${article.author || "Updaze Desk"}</td>
             <td>${formatPublishDate(article.publishedAt)}</td>
+            <td>${Number(article.viewCount || 0)}</td>
             <td><a class="btn btn-sm btn-outline-primary" href="${articleUrl}" target="_blank" rel="noopener">View</a></td>
           </tr>`;
       })
@@ -82,7 +83,7 @@ async function loadPublishedArticles() {
 
     publishedArticlesStatus.textContent = `Showing ${snap.size} published articles.`;
   } catch (error) {
-    publishedArticlesBody.innerHTML = '<tr><td colspan="5" class="text-danger">Unable to load published articles.</td></tr>';
+    publishedArticlesBody.innerHTML = '<tr><td colspan="6" class="text-danger">Unable to load published articles.</td></tr>';
     publishedArticlesStatus.textContent = `Failed to load dashboard data: ${error.message}`;
     publishedArticlesStatus.className = "small text-danger mb-3";
   }
