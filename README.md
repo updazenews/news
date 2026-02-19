@@ -7,7 +7,8 @@ Responsive Bootstrap 5 + Firebase powered news website prepared for GitHub Pages
 - `category.html`
 - `article.html`
 - `admin/login.html`
-- `admin/dashboard.html`
+- `admin/index.html`
+- `admin/dashboard.html` (legacy redirect)
 - Generated static examples under `articles/`
 
 ## Firebase setup
@@ -25,7 +26,7 @@ Update `assets/js/firebase-config.js` with your project values.
 ## Admin flow
 1. Authorized user signs in at `/admin/login.html`.
 2. Role check is performed from `users/{uid}`.
-3. Publishing from dashboard writes article to Firestore and generates static HTML (download) for `/articles/[slug].html`.
+3. Publishing from dashboard writes article to Firestore and makes it live on the hosted site at `/article.html?slug=[slug]`.
 
 ## Hosting
 `firebase.json` is included with SPA rewrite and clean URLs.
