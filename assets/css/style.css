@@ -1,12 +1,21 @@
 :root {
-  --brand-primary: #0d6efd;
-  --brand-dark: #0f172a;
+  --brand-primary: #1f6da8;
+  --brand-primary-dark: #155180;
+  --brand-accent-purple: #8c3f97;
+  --brand-accent-orange: #e36a2a;
+  --brand-accent-green: #2e9b4b;
+  --brand-dark: #2f3136;
   --muted: #6c757d;
+
+  --bs-primary: var(--brand-primary);
+  --bs-primary-rgb: 31, 109, 168;
+  --bs-link-color: var(--brand-primary);
+  --bs-link-hover-color: var(--brand-primary-dark);
 }
 
 body {
   font-family: "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  color: #1f2937;
+  color: var(--brand-dark);
   background-color: #f8fafc;
 }
 
@@ -22,8 +31,37 @@ body {
 .hero-card {
   border: 0;
   border-radius: 0.9rem;
-  background: linear-gradient(135deg, #0d6efd, #4f46e5);
+  background: linear-gradient(130deg, var(--brand-primary), var(--brand-accent-purple) 58%, var(--brand-accent-orange));
   color: #fff;
+}
+
+.btn-primary {
+  --bs-btn-bg: var(--brand-primary);
+  --bs-btn-border-color: var(--brand-primary);
+  --bs-btn-hover-bg: var(--brand-primary-dark);
+  --bs-btn-hover-border-color: var(--brand-primary-dark);
+  --bs-btn-active-bg: #124469;
+  --bs-btn-active-border-color: #124469;
+}
+
+.btn-outline-primary {
+  --bs-btn-color: var(--brand-primary);
+  --bs-btn-border-color: var(--brand-primary);
+  --bs-btn-hover-bg: var(--brand-primary);
+  --bs-btn-hover-border-color: var(--brand-primary);
+}
+
+.text-primary {
+  color: var(--brand-primary) !important;
+}
+
+.navbar-brand {
+  color: var(--brand-dark) !important;
+}
+
+.navbar-brand:hover,
+.navbar-brand:focus {
+  color: var(--brand-primary) !important;
 }
 
 .article-card {
@@ -46,6 +84,7 @@ body {
 .section-title {
   font-weight: 700;
   margin-bottom: 1rem;
+  color: var(--brand-dark);
 }
 
 .site-footer {
