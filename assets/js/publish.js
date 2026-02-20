@@ -13,6 +13,10 @@ import {
   where
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+const CLOUDINARY_API_KEY = "426579875859513";
+const CLOUDINARY_API_SECRET = "5PKwQz2d2-yyadY3FGVBqmQW3kQ";
+const CLOUDINARY_FOLDER = "updaze-news";
+
 function slugify(value) {
   return value
     .toLowerCase()
@@ -39,9 +43,7 @@ function escapeHtml(value = "") {
 }
 
 function formatInlineMarkdown(text = "") {
-  return text
-    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-    .replace(/\*(.+?)\*/g, "<em>$1</em>");
+  return text.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/\*(.+?)\*/g, "<em>$1</em>");
 }
 
 function renderFormattedContent(rawContent = "") {
@@ -121,21 +123,58 @@ function applyEditorFormat(type) {
   contentField.focus();
 }
 
-function buildAssetImagePath(slug) {
+async function sha1Hex(text) {
+  const data = new TextEncoder().encode(text);
+  const hashBuffer = await crypto.subtle.digest("SHA-1", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function uploadSelectedImageToCloudinary(slug) {
   const imageFileInput = document.getElementById("imageFile");
   const imageUploadStatus = document.getElementById("imageUploadStatus");
+  const cloudNameInput = document.getElementById("cloudinaryCloudName");
   const file = imageFileInput?.files?.[0];
+
   if (!file) return "";
 
-  const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
-  const fileName = `${slug}-${sanitizedName}`;
+  const cloudName = cloudNameInput?.value.trim();
+  if (!cloudName) throw new Error("Cloudinary cloud name is required for image upload.");
 
   if (imageUploadStatus) {
-    imageUploadStatus.textContent = `Use this file path in repo: assets/articles/${fileName}`;
-    imageUploadStatus.className = "small text-warning mt-1";
+    imageUploadStatus.textContent = "Uploading image to Cloudinary...";
+    imageUploadStatus.className = "small text-muted mt-1";
   }
 
-  return `assets/articles/${fileName}`;
+  const timestamp = Math.floor(Date.now() / 1000);
+  const signatureBase = `folder=${CLOUDINARY_FOLDER}&timestamp=${timestamp}${CLOUDINARY_API_SECRET}`;
+  const signature = await sha1Hex(signatureBase);
+
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("api_key", CLOUDINARY_API_KEY);
+  formData.append("timestamp", `${timestamp}`);
+  formData.append("signature", signature);
+  formData.append("folder", CLOUDINARY_FOLDER);
+
+  const response = await fetch(`https://api.cloudinary.com/v1_1/${encodeURIComponent(cloudName)}/image/upload`, {
+    method: "POST",
+    body: formData
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Cloudinary upload failed: ${errorText}`);
+  }
+
+  const result = await response.json();
+
+  if (imageUploadStatus) {
+    imageUploadStatus.textContent = "Image uploaded to Cloudinary successfully.";
+    imageUploadStatus.className = "small text-success mt-1";
+  }
+
+  return result.secure_url || "";
 }
 
 const form = document.getElementById("publishForm");
@@ -145,6 +184,10 @@ const guardMessage = document.getElementById("guardMessage");
 const adminUserLabel = document.getElementById("adminUserLabel");
 const publishedArticlesBody = document.getElementById("publishedArticlesBody");
 const publishedArticlesStatus = document.getElementById("publishedArticlesStatus");
+const cloudinaryCloudNameInput = document.getElementById("cloudinaryCloudName");
+
+const savedCloudName = localStorage.getItem("updaze_cloudinary_cloud_name");
+if (cloudinaryCloudNameInput && savedCloudName) cloudinaryCloudNameInput.value = savedCloudName;
 
 async function loadPublishedArticles() {
   if (!publishedArticlesBody || !publishedArticlesStatus) return;
@@ -210,7 +253,9 @@ document.getElementById("previewBtn")?.addEventListener("click", () => {
   const excerpt = document.getElementById("excerpt").value.trim();
   const imageCaption = document.getElementById("imageCaption").value.trim();
   const file = document.getElementById("imageFile")?.files?.[0];
-  const previewImage = file ? `<img src="${URL.createObjectURL(file)}" alt="Preview image" class="img-fluid rounded my-3" />${imageCaption ? `<p class="article-image-caption">${escapeHtml(imageCaption)}</p>` : ""}` : "";
+  const previewImage = file
+    ? `<img src="${URL.createObjectURL(file)}" alt="Preview image" class="img-fluid rounded my-3" />${imageCaption ? `<p class="article-image-caption">${escapeHtml(imageCaption)}</p>` : ""}`
+    : "";
 
   previewPane.innerHTML = `<h3>${escapeHtml(title || "Untitled draft")}</h3>
     <p class="text-muted">${escapeHtml(excerpt)}</p>
@@ -220,6 +265,15 @@ document.getElementById("previewBtn")?.addEventListener("click", () => {
 
 form?.addEventListener("submit", async (event) => {
   event.preventDefault();
+
+  const cloudName = cloudinaryCloudNameInput?.value.trim();
+  if (!cloudName) {
+    publishMessage.className = "mt-3 mb-0 small text-danger";
+    publishMessage.textContent = "Cloudinary cloud name is required.";
+    return;
+  }
+
+  localStorage.setItem("updaze_cloudinary_cloud_name", cloudName);
 
   const article = {
     title: document.getElementById("title").value.trim(),
@@ -232,16 +286,16 @@ form?.addEventListener("submit", async (event) => {
   };
 
   article.slug = slugify(article.title);
-  // imageUrl is derived from the selected #imageFile and stored under assets/articles/
-  article.imageUrl = buildAssetImagePath(article.slug);
 
   try {
+    article.imageUrl = await uploadSelectedImageToCloudinary(article.slug);
+
     const articleRef = doc(db, "articles", article.slug);
     await setDoc(articleRef, { ...article, publishedAt: serverTimestamp(), updatedAt: serverTimestamp() }, { merge: true });
 
     const articleUrl = toArticleUrl(article.slug);
     publishMessage.className = "mt-3 mb-0 small text-success";
-    publishMessage.innerHTML = `Published successfully. Live page: <a href="${articleUrl}" target="_blank" rel="noopener">${articleUrl}</a>${article.imageUrl ? `<br/>Image path saved as <code>${article.imageUrl}</code>. Ensure this file exists in repo.` : ""}`;
+    publishMessage.innerHTML = `Published successfully. Live page: <a href="${articleUrl}" target="_blank" rel="noopener">${articleUrl}</a>`;
 
     await loadPublishedArticles();
   } catch (error) {
