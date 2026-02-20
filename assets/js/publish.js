@@ -232,6 +232,7 @@ form?.addEventListener("submit", async (event) => {
   };
 
   article.slug = slugify(article.title);
+  // imageUrl is derived from the selected #imageFile and stored under assets/articles/
   article.imageUrl = buildAssetImagePath(article.slug);
 
   try {
