@@ -9,10 +9,11 @@ const label = document.getElementById("adminUserLabel");
 const manageUsersLink = document.getElementById("manageUsersLink");
 const form = document.getElementById("accountForm");
 const msg = document.getElementById("accountMessage");
+const saveProfileBtn = document.getElementById("saveProfileBtn");
 
 if (!authInfo) {
   guardMessage?.classList.remove("d-none");
-  guardMessage.textContent = "Unauthorized access.";
+  if (guardMessage) guardMessage.textContent = "Unauthorized access.";
 } else {
   label.textContent = `${authInfo.profile.displayName || authInfo.user.email} (${authInfo.role})`;
   if (canManageUsers(authInfo.role)) manageUsersLink?.classList.remove("d-none");
@@ -20,16 +21,42 @@ if (!authInfo) {
   document.getElementById("cellphone").value = authInfo.profile.cellphone || "";
 }
 
-document.getElementById("logoutBtn")?.addEventListener("click", async () => { await signOut(auth); window.location.href = "/admin/login.html"; });
+document.getElementById("logoutBtn")?.addEventListener("click", async () => {
+  await signOut(auth);
+  window.location.href = "/admin/login.html";
+});
 
 form?.addEventListener("submit", async (e) => {
   e.preventDefault();
   if (!authInfo) return;
-  await updateDoc(doc(db, "users", authInfo.user.uid), {
-    displayName: document.getElementById("displayName").value.trim(),
-    cellphone: document.getElementById("cellphone").value.trim(),
-    updatedAt: new Date().toISOString()
-  });
-  msg.className = "small mt-3 text-success";
-  msg.textContent = "Profile updated.";
+
+  const displayName = document.getElementById("displayName").value.trim();
+  const cellphone = document.getElementById("cellphone").value.trim();
+
+  if (!displayName) {
+    msg.className = "small mt-3 mb-0 text-danger";
+    msg.textContent = "Name is required.";
+    return;
+  }
+
+  try {
+    saveProfileBtn.disabled = true;
+    msg.className = "small mt-3 mb-0 text-muted";
+    msg.textContent = "Saving profile...";
+
+    await updateDoc(doc(db, "users", authInfo.user.uid), {
+      displayName,
+      cellphone,
+      updatedAt: new Date().toISOString()
+    });
+
+    msg.className = "small mt-3 mb-0 text-success";
+    msg.textContent = "Profile updated successfully.";
+    label.textContent = `${displayName || authInfo.user.email} (${authInfo.role})`;
+  } catch (error) {
+    msg.className = "small mt-3 mb-0 text-danger";
+    msg.textContent = `Unable to save profile: ${error.message}`;
+  } finally {
+    saveProfileBtn.disabled = false;
+  }
 });

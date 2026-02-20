@@ -14,7 +14,6 @@
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
-
     gtag('config', 'G-PHWVGJ3Q72');
   </script>
   <meta charset="utf-8" />
@@ -27,8 +26,7 @@
 </head>
 <body class="admin-shell d-flex align-items-center">
   <!-- Google Tag Manager (noscript) -->
-  <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-M42THLLQ"
-  height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+  <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-M42THLLQ" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <!-- End Google Tag Manager (noscript) -->
 
   <main class="container">
@@ -36,15 +34,18 @@
       <div class="col-md-6 col-lg-5">
         <article class="card admin-panel p-4">
           <h1 class="h3 mb-3">Admin Portal Login</h1>
-          <p class="text-muted">Access restricted to admin, super admin, and editor roles.</p>
+          <p class="text-muted">Access restricted to publisher, admin, super admin, and editor roles.</p>
           <form id="loginForm" novalidate>
             <div class="mb-3">
               <label class="form-label" for="email">Email</label>
               <input class="form-control" id="email" name="email" type="email" required />
             </div>
-            <div class="mb-3">
+            <div class="mb-2">
               <label class="form-label" for="password">Password</label>
               <input class="form-control" id="password" name="password" type="password" minlength="6" required />
+            </div>
+            <div class="mb-3 text-end">
+              <a href="#" id="forgotPasswordLink" class="small">Forgot Password?</a>
             </div>
             <div id="loginMessage" class="small mb-3" role="status" aria-live="polite"></div>
             <button class="btn btn-primary w-100" type="submit">Sign in</button>
@@ -54,6 +55,29 @@
     </section>
   </main>
 
+  <div class="modal fade" id="forgotPasswordModal" tabindex="-1" aria-labelledby="forgotPasswordLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form id="forgotPasswordForm">
+          <div class="modal-header">
+            <h2 class="modal-title fs-5" id="forgotPasswordLabel">Reset Password</h2>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <label class="form-label" for="resetEmail">Email address</label>
+            <input id="resetEmail" type="email" class="form-control" required />
+            <p id="forgotPasswordMessage" class="small mt-2 mb-0" role="status" aria-live="polite"></p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button id="forgotPasswordSubmitBtn" type="submit" class="btn btn-primary">Send reset link</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
   <script type="module" src="../assets/js/auth.js"></script>
   <script src="../assets/js/cookie-consent.js"></script>
 </body>

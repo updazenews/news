@@ -67,6 +67,16 @@ export function guardAdminRoute({ allowRoles = ALLOWED_ROLES, redirectTo = "/adm
 const loginForm = document.getElementById("loginForm");
 if (loginForm) {
   const loginMessage = document.getElementById("loginMessage");
+  const forgotPasswordLink = document.getElementById("forgotPasswordLink");
+  const forgotPasswordForm = document.getElementById("forgotPasswordForm");
+  const forgotPasswordModalEl = document.getElementById("forgotPasswordModal");
+  const resetEmailInput = document.getElementById("resetEmail");
+  const forgotPasswordMessage = document.getElementById("forgotPasswordMessage");
+  const forgotPasswordSubmitBtn = document.getElementById("forgotPasswordSubmitBtn");
+
+  const forgotPasswordModal = forgotPasswordModalEl && window.bootstrap?.Modal
+    ? new window.bootstrap.Modal(forgotPasswordModalEl)
+    : null;
 
   loginForm.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -89,6 +99,41 @@ if (loginForm) {
     } catch (error) {
       loginMessage.textContent = `Login failed: ${error.message}`;
       loginMessage.className = "small mb-3 text-danger";
+    }
+  });
+
+  forgotPasswordLink?.addEventListener("click", (event) => {
+    event.preventDefault();
+    const loginEmail = document.getElementById("email")?.value?.trim();
+    if (loginEmail && resetEmailInput) resetEmailInput.value = loginEmail;
+    forgotPasswordMessage.textContent = "";
+    forgotPasswordMessage.className = "small mt-2 mb-0";
+    forgotPasswordModal?.show();
+  });
+
+  forgotPasswordForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const resetEmail = resetEmailInput?.value?.trim();
+
+    if (!resetEmail) {
+      forgotPasswordMessage.className = "small mt-2 mb-0 text-danger";
+      forgotPasswordMessage.textContent = "Please enter your email address.";
+      return;
+    }
+
+    try {
+      forgotPasswordSubmitBtn.disabled = true;
+      forgotPasswordMessage.className = "small mt-2 mb-0 text-muted";
+      forgotPasswordMessage.textContent = "Sending reset link...";
+      await sendResetEmail(resetEmail);
+      forgotPasswordMessage.className = "small mt-2 mb-0 text-success";
+      forgotPasswordMessage.textContent = "Password reset link sent. Check your inbox.";
+      setTimeout(() => forgotPasswordModal?.hide(), 1200);
+    } catch (error) {
+      forgotPasswordMessage.className = "small mt-2 mb-0 text-danger";
+      forgotPasswordMessage.textContent = `Unable to send reset link: ${error.message}`;
+    } finally {
+      forgotPasswordSubmitBtn.disabled = false;
     }
   });
 }
