@@ -17,6 +17,78 @@ function toggleLoading(loadingId, contentId, isLoading) {
   if (contentElement) contentElement.classList.toggle("d-none", isLoading);
 }
 
+function escapeHtml(value = "") {
+  const map = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" };
+  return value.replace(/[&<>"']/g, (char) => map[char]);
+}
+
+function formatInlineMarkdown(text = "") {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.+?)\*/g, "<em>$1</em>");
+}
+
+function renderFormattedContent(rawContent = "") {
+  const lines = rawContent.split("\n");
+  let html = "";
+  let inUl = false;
+  let inOl = false;
+
+  const closeLists = () => {
+    if (inUl) {
+      html += "</ul>";
+      inUl = false;
+    }
+    if (inOl) {
+      html += "</ol>";
+      inOl = false;
+    }
+  };
+
+  lines.forEach((line) => {
+    const trimmed = line.trim();
+
+    if (!trimmed) {
+      closeLists();
+      return;
+    }
+
+    if (/^[-*]\s+/.test(trimmed)) {
+      if (inOl) {
+        html += "</ol>";
+        inOl = false;
+      }
+      if (!inUl) {
+        html += "<ul>";
+        inUl = true;
+      }
+      const item = escapeHtml(trimmed.replace(/^[-*]\s+/, ""));
+      html += `<li>${formatInlineMarkdown(item)}</li>`;
+      return;
+    }
+
+    if (/^\d+\.\s+/.test(trimmed)) {
+      if (inUl) {
+        html += "</ul>";
+        inUl = false;
+      }
+      if (!inOl) {
+        html += "<ol>";
+        inOl = true;
+      }
+      const item = escapeHtml(trimmed.replace(/^\d+\.\s+/, ""));
+      html += `<li>${formatInlineMarkdown(item)}</li>`;
+      return;
+    }
+
+    closeLists();
+    html += `<p>${formatInlineMarkdown(escapeHtml(trimmed))}</p>`;
+  });
+
+  closeLists();
+  return html;
+}
+
 async function initHomePage() {
   const homeList = document.getElementById("homeArticleList");
   if (!homeList) return;
@@ -122,16 +194,18 @@ async function initArticlePage() {
 
   document.getElementById("articleMeta").textContent = `${article.author || "Updaze Desk"} • ${publishedDate} • ${currentViews} views`;
 
-  articleBody.innerHTML = article.content
-    .split("\n")
-    .filter(Boolean)
-    .map((paragraph) => `<p>${paragraph}</p>`)
-    .join("");
+  articleBody.innerHTML = renderFormattedContent(article.content || "");
 
   if (article.imageUrl) {
     const image = document.getElementById("articleImage");
     image.src = article.imageUrl;
     image.classList.remove("d-none");
+  }
+
+  const imageCaption = document.getElementById("articleImageCaption");
+  if (imageCaption && article.imageCaption) {
+    imageCaption.textContent = article.imageCaption;
+    imageCaption.classList.remove("d-none");
   }
 
   toggleLoading("articleLoadingSpinner", "articleContent", false);

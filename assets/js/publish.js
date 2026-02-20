@@ -1,4 +1,4 @@
-import { auth, db } from "./firebase-config.js";
+import { auth, db, storage } from "./firebase-config.js";
 import { guardAdminRoute } from "./auth.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
@@ -12,6 +12,7 @@ import {
   setDoc,
   where
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getDownloadURL, ref, uploadBytes } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
 function slugify(value) {
   return value
@@ -31,6 +32,133 @@ function formatPublishDate(rawValue) {
   if (typeof rawValue.toDate === "function") return rawValue.toDate().toLocaleString();
   if (rawValue.seconds) return new Date(rawValue.seconds * 1000).toLocaleString();
   return new Date(rawValue).toLocaleString();
+}
+
+function escapeHtml(value = "") {
+  const map = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" };
+  return value.replace(/[&<>"']/g, (char) => map[char]);
+}
+
+function formatInlineMarkdown(text = "") {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.+?)\*/g, "<em>$1</em>");
+}
+
+function renderFormattedContent(rawContent = "") {
+  const lines = rawContent.split("\n");
+  let html = "";
+  let inUl = false;
+  let inOl = false;
+
+  const closeLists = () => {
+    if (inUl) {
+      html += "</ul>";
+      inUl = false;
+    }
+    if (inOl) {
+      html += "</ol>";
+      inOl = false;
+    }
+  };
+
+  lines.forEach((line) => {
+    const trimmed = line.trim();
+
+    if (!trimmed) {
+      closeLists();
+      return;
+    }
+
+    if (/^[-*]\s+/.test(trimmed)) {
+      if (inOl) {
+        html += "</ol>";
+        inOl = false;
+      }
+      if (!inUl) {
+        html += "<ul>";
+        inUl = true;
+      }
+      const item = escapeHtml(trimmed.replace(/^[-*]\s+/, ""));
+      html += `<li>${formatInlineMarkdown(item)}</li>`;
+      return;
+    }
+
+    if (/^\d+\.\s+/.test(trimmed)) {
+      if (inUl) {
+        html += "</ul>";
+        inUl = false;
+      }
+      if (!inOl) {
+        html += "<ol>";
+        inOl = true;
+      }
+      const item = escapeHtml(trimmed.replace(/^\d+\.\s+/, ""));
+      html += `<li>${formatInlineMarkdown(item)}</li>`;
+      return;
+    }
+
+    closeLists();
+    html += `<p>${formatInlineMarkdown(escapeHtml(trimmed))}</p>`;
+  });
+
+  closeLists();
+  return html;
+}
+
+function applyEditorFormat(type) {
+  const contentField = document.getElementById("content");
+  if (!contentField) return;
+
+  const start = contentField.selectionStart;
+  const end = contentField.selectionEnd;
+  const selected = contentField.value.slice(start, end);
+
+  if (type === "bold") {
+    const replacement = `**${selected || "bold text"}**`;
+    contentField.setRangeText(replacement, start, end, "end");
+  }
+
+  if (type === "italic") {
+    const replacement = `*${selected || "italic text"}*`;
+    contentField.setRangeText(replacement, start, end, "end");
+  }
+
+  if (type === "bullet" || type === "number") {
+    const baseText = selected || "list item";
+    const lines = baseText.split("\n").filter(Boolean);
+    const replacement = lines
+      .map((line, index) => (type === "bullet" ? `- ${line}` : `${index + 1}. ${line}`))
+      .join("\n");
+    contentField.setRangeText(replacement, start, end, "end");
+  }
+
+  contentField.focus();
+}
+
+async function uploadSelectedImage(slug) {
+  const imageFileInput = document.getElementById("imageFile");
+  const imageUploadStatus = document.getElementById("imageUploadStatus");
+  const file = imageFileInput?.files?.[0];
+
+  if (!file) return "";
+
+  if (imageUploadStatus) {
+    imageUploadStatus.textContent = "Uploading image...";
+    imageUploadStatus.className = "small text-muted mt-1";
+  }
+
+  const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
+  const storageRef = ref(storage, `article-images/${slug}-${Date.now()}-${sanitizedName}`);
+  await uploadBytes(storageRef, file);
+  const downloadUrl = await getDownloadURL(storageRef);
+
+  if (imageUploadStatus) {
+    imageUploadStatus.textContent = "Image uploaded successfully.";
+    imageUploadStatus.className = "small text-success mt-1";
+  }
+
+  return downloadUrl;
 }
 
 const form = document.getElementById("publishForm");
@@ -103,16 +231,27 @@ document.getElementById("logoutBtn")?.addEventListener("click", async () => {
   window.location.href = "/admin/login.html";
 });
 
+document.querySelectorAll("[data-format]")?.forEach((button) => {
+  button.addEventListener("click", () => applyEditorFormat(button.dataset.format));
+});
+
 document.getElementById("previewBtn")?.addEventListener("click", () => {
   const title = document.getElementById("title").value.trim();
   const content = document.getElementById("content").value.trim();
   const excerpt = document.getElementById("excerpt").value.trim();
+  const imageUrl = document.getElementById("imageUrl").value.trim();
+  const imageCaption = document.getElementById("imageCaption").value.trim();
 
-  previewPane.innerHTML = `<h3>${title || "Untitled draft"}</h3><p class="text-muted">${excerpt}</p>${content
-    .split("\n")
-    .filter(Boolean)
-    .map((paragraph) => `<p>${paragraph}</p>`)
-    .join("")}`;
+  const previewImage = imageUrl
+    ? `<img src="${escapeHtml(imageUrl)}" alt="Preview image" class="img-fluid rounded my-3" />${
+      imageCaption ? `<p class="article-image-caption">${escapeHtml(imageCaption)}</p>` : ""
+    }`
+    : "";
+
+  previewPane.innerHTML = `<h3>${escapeHtml(title || "Untitled draft")}</h3>
+    <p class="text-muted">${escapeHtml(excerpt)}</p>
+    ${previewImage}
+    ${renderFormattedContent(content)}`;
 });
 
 form?.addEventListener("submit", async (event) => {
@@ -123,6 +262,7 @@ form?.addEventListener("submit", async (event) => {
     category: document.getElementById("category").value,
     author: document.getElementById("author").value.trim(),
     imageUrl: document.getElementById("imageUrl").value.trim(),
+    imageCaption: document.getElementById("imageCaption").value.trim(),
     excerpt: document.getElementById("excerpt").value.trim(),
     content: document.getElementById("content").value.trim(),
     status: "published"
@@ -131,6 +271,10 @@ form?.addEventListener("submit", async (event) => {
   article.slug = slugify(article.title);
 
   try {
+    if (!article.imageUrl) {
+      article.imageUrl = await uploadSelectedImage(article.slug);
+    }
+
     const articleRef = doc(db, "articles", article.slug);
     await setDoc(
       articleRef,

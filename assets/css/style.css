@@ -165,3 +165,17 @@ body {
 .cookie-consent-content a {
   color: var(--brand-primary);
 }
+
+
+.editor-toolbar {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.article-image-caption {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin-top: -0.5rem;
+  margin-bottom: 1rem;
+}
