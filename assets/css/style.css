@@ -179,3 +179,10 @@ body {
   margin-top: -0.5rem;
   margin-bottom: 1rem;
 }
+
+.site-logo {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  border-radius: 0.4rem;
+}
