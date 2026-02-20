@@ -3,29 +3,25 @@ service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
     function userDoc(uid) { return get(/databases/$(database)/documents/users/$(uid)); }
-    function role() { return signedIn() ? userDoc(request.auth.uid).data.role : null; }
+    function profileRole() { return signedIn() ? userDoc(request.auth.uid).data.role : null; }
+    function tokenRole() { return signedIn() ? request.auth.token.role : null; }
+    function effectiveRole() { return tokenRole() != null ? tokenRole() : profileRole(); }
+    function isPrivileged() { return effectiveRole() in ['admin', 'super admin']; }
     function disabled() { return signedIn() ? userDoc(request.auth.uid).data.disabled == true : true; }
 
-    match /users/{uid} {
-      allow read: if signedIn() && !disabled() && (
-        request.auth.uid == uid || role() in ['admin','super admin']
-      );
-
-      allow create, update: if signedIn() && !disabled() && (
-        role() == 'super admin' ||
-        (role() == 'admin' && userDoc(uid).data.role != 'super admin') ||
-        (request.auth.uid == uid)
-      );
+    match /users/{userId} {
+      allow read: if true;
+      allow write: if signedIn() && isPrivileged();
     }
 
     match /articles/{articleId} {
       allow read: if true;
-      allow create: if signedIn() && !disabled() && role() in ['publisher','admin','super admin','editor'];
+      allow create: if signedIn() && !disabled() && effectiveRole() in ['publisher','admin','super admin','editor'];
       allow update: if signedIn() && !disabled() && (
-        role() in ['admin','super admin'] ||
-        (role() in ['publisher','editor'] && resource.data.authorUid == request.auth.uid)
+        effectiveRole() in ['admin','super admin'] ||
+        (effectiveRole() in ['publisher','editor'] && resource.data.authorUid == request.auth.uid)
       );
-      allow delete: if signedIn() && !disabled() && role() in ['admin','super admin'];
+      allow delete: if signedIn() && !disabled() && effectiveRole() in ['admin','super admin'];
     }
   }
 }
