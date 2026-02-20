@@ -1,4 +1,4 @@
-import { auth, db, storage } from "./firebase-config.js";
+import { auth, db } from "./firebase-config.js";
 import { guardAdminRoute } from "./auth.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
@@ -12,7 +12,6 @@ import {
   setDoc,
   where
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getDownloadURL, ref, uploadBytes } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
 function slugify(value) {
   return value
@@ -64,7 +63,6 @@ function renderFormattedContent(rawContent = "") {
 
   lines.forEach((line) => {
     const trimmed = line.trim();
-
     if (!trimmed) {
       closeLists();
       return;
@@ -79,8 +77,7 @@ function renderFormattedContent(rawContent = "") {
         html += "<ul>";
         inUl = true;
       }
-      const item = escapeHtml(trimmed.replace(/^[-*]\s+/, ""));
-      html += `<li>${formatInlineMarkdown(item)}</li>`;
+      html += `<li>${formatInlineMarkdown(escapeHtml(trimmed.replace(/^[-*]\s+/, "")))}</li>`;
       return;
     }
 
@@ -93,8 +90,7 @@ function renderFormattedContent(rawContent = "") {
         html += "<ol>";
         inOl = true;
       }
-      const item = escapeHtml(trimmed.replace(/^\d+\.\s+/, ""));
-      html += `<li>${formatInlineMarkdown(item)}</li>`;
+      html += `<li>${formatInlineMarkdown(escapeHtml(trimmed.replace(/^\d+\.\s+/, "")))}</li>`;
       return;
     }
 
@@ -114,51 +110,32 @@ function applyEditorFormat(type) {
   const end = contentField.selectionEnd;
   const selected = contentField.value.slice(start, end);
 
-  if (type === "bold") {
-    const replacement = `**${selected || "bold text"}**`;
-    contentField.setRangeText(replacement, start, end, "end");
-  }
-
-  if (type === "italic") {
-    const replacement = `*${selected || "italic text"}*`;
-    contentField.setRangeText(replacement, start, end, "end");
-  }
-
+  if (type === "bold") contentField.setRangeText(`**${selected || "bold text"}**`, start, end, "end");
+  if (type === "italic") contentField.setRangeText(`*${selected || "italic text"}*`, start, end, "end");
   if (type === "bullet" || type === "number") {
-    const baseText = selected || "list item";
-    const lines = baseText.split("\n").filter(Boolean);
-    const replacement = lines
-      .map((line, index) => (type === "bullet" ? `- ${line}` : `${index + 1}. ${line}`))
-      .join("\n");
+    const lines = (selected || "list item").split("\n").filter(Boolean);
+    const replacement = lines.map((line, idx) => (type === "bullet" ? `- ${line}` : `${idx + 1}. ${line}`)).join("\n");
     contentField.setRangeText(replacement, start, end, "end");
   }
 
   contentField.focus();
 }
 
-async function uploadSelectedImage(slug) {
+function buildAssetImagePath(slug) {
   const imageFileInput = document.getElementById("imageFile");
   const imageUploadStatus = document.getElementById("imageUploadStatus");
   const file = imageFileInput?.files?.[0];
-
   if (!file) return "";
 
-  if (imageUploadStatus) {
-    imageUploadStatus.textContent = "Uploading image...";
-    imageUploadStatus.className = "small text-muted mt-1";
-  }
-
   const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
-  const storageRef = ref(storage, `article-images/${slug}-${Date.now()}-${sanitizedName}`);
-  await uploadBytes(storageRef, file);
-  const downloadUrl = await getDownloadURL(storageRef);
+  const fileName = `${slug}-${sanitizedName}`;
 
   if (imageUploadStatus) {
-    imageUploadStatus.textContent = "Image uploaded successfully.";
-    imageUploadStatus.className = "small text-success mt-1";
+    imageUploadStatus.textContent = `Use this file path in repo: assets/articles/${fileName}`;
+    imageUploadStatus.className = "small text-warning mt-1";
   }
 
-  return downloadUrl;
+  return `assets/articles/${fileName}`;
 }
 
 const form = document.getElementById("publishForm");
@@ -177,13 +154,7 @@ async function loadPublishedArticles() {
 
   try {
     const articlesRef = collection(db, "articles");
-    const publishedQuery = query(
-      articlesRef,
-      where("status", "==", "published"),
-      orderBy("publishedAt", "desc"),
-      limit(50)
-    );
-
+    const publishedQuery = query(articlesRef, where("status", "==", "published"), orderBy("publishedAt", "desc"), limit(50));
     const snap = await getDocs(publishedQuery);
 
     if (snap.empty) {
@@ -196,9 +167,7 @@ async function loadPublishedArticles() {
       .map((item) => {
         const article = item.data();
         const articleUrl = toArticleUrl(article.slug || item.id);
-
-        return `
-          <tr>
+        return `<tr>
             <td class="fw-semibold">${article.title || "Untitled"}</td>
             <td class="text-uppercase">${article.category || "general"}</td>
             <td>${article.author || "Updaze Desk"}</td>
@@ -231,7 +200,7 @@ document.getElementById("logoutBtn")?.addEventListener("click", async () => {
   window.location.href = "/admin/login.html";
 });
 
-document.querySelectorAll("[data-format]")?.forEach((button) => {
+document.querySelectorAll("[data-format]").forEach((button) => {
   button.addEventListener("click", () => applyEditorFormat(button.dataset.format));
 });
 
@@ -239,14 +208,9 @@ document.getElementById("previewBtn")?.addEventListener("click", () => {
   const title = document.getElementById("title").value.trim();
   const content = document.getElementById("content").value.trim();
   const excerpt = document.getElementById("excerpt").value.trim();
-  const imageUrl = document.getElementById("imageUrl").value.trim();
   const imageCaption = document.getElementById("imageCaption").value.trim();
-
-  const previewImage = imageUrl
-    ? `<img src="${escapeHtml(imageUrl)}" alt="Preview image" class="img-fluid rounded my-3" />${
-      imageCaption ? `<p class="article-image-caption">${escapeHtml(imageCaption)}</p>` : ""
-    }`
-    : "";
+  const file = document.getElementById("imageFile")?.files?.[0];
+  const previewImage = file ? `<img src="${URL.createObjectURL(file)}" alt="Preview image" class="img-fluid rounded my-3" />${imageCaption ? `<p class="article-image-caption">${escapeHtml(imageCaption)}</p>` : ""}` : "";
 
   previewPane.innerHTML = `<h3>${escapeHtml(title || "Untitled draft")}</h3>
     <p class="text-muted">${escapeHtml(excerpt)}</p>
@@ -261,7 +225,6 @@ form?.addEventListener("submit", async (event) => {
     title: document.getElementById("title").value.trim(),
     category: document.getElementById("category").value,
     author: document.getElementById("author").value.trim(),
-    imageUrl: document.getElementById("imageUrl").value.trim(),
     imageCaption: document.getElementById("imageCaption").value.trim(),
     excerpt: document.getElementById("excerpt").value.trim(),
     content: document.getElementById("content").value.trim(),
@@ -269,27 +232,15 @@ form?.addEventListener("submit", async (event) => {
   };
 
   article.slug = slugify(article.title);
+  article.imageUrl = buildAssetImagePath(article.slug);
 
   try {
-    if (!article.imageUrl) {
-      article.imageUrl = await uploadSelectedImage(article.slug);
-    }
-
     const articleRef = doc(db, "articles", article.slug);
-    await setDoc(
-      articleRef,
-      {
-        ...article,
-        publishedAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      },
-      { merge: true }
-    );
+    await setDoc(articleRef, { ...article, publishedAt: serverTimestamp(), updatedAt: serverTimestamp() }, { merge: true });
 
     const articleUrl = toArticleUrl(article.slug);
-
     publishMessage.className = "mt-3 mb-0 small text-success";
-    publishMessage.innerHTML = `Published successfully. Live page: <a href="${articleUrl}" target="_blank" rel="noopener">${articleUrl}</a>`;
+    publishMessage.innerHTML = `Published successfully. Live page: <a href="${articleUrl}" target="_blank" rel="noopener">${articleUrl}</a>${article.imageUrl ? `<br/>Image path saved as <code>${article.imageUrl}</code>. Ensure this file exists in repo.` : ""}`;
 
     await loadPublishedArticles();
   } catch (error) {

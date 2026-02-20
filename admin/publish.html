@@ -47,7 +47,7 @@
 
     <section class="card admin-panel p-4 mb-4">
       <h2 class="h5">Publish Article</h2>
-      <p class="text-muted">Publish to Firestore and show on your hosted site via <code>article.html?slug=[slug]</code>.</p>
+      <p class="text-muted">Publish to Firestore and show on your hosted site via <code>article.html?slug=[slug]</code>. Image files should be placed in <code>assets/articles/</code>, not Firebase storage.</p>
       <form id="publishForm" class="row g-3">
         <div class="col-md-8">
           <label class="form-label" for="title">Title</label>
@@ -75,16 +75,12 @@
           <label class="form-label" for="author">Author</label>
           <input class="form-control" id="author" required />
         </div>
-        <div class="col-md-6">
-          <label class="form-label" for="imageUrl">Feature image URL (optional)</label>
-          <input class="form-control" id="imageUrl" type="url" placeholder="https://" />
-        </div>
-        <div class="col-md-6">
-          <label class="form-label" for="imageFile">Upload image (optional)</label>
+        <div class="col-12">
+          <label class="form-label" for="imageFile">Upload image to Assets/Articles (optional)</label>
           <input class="form-control" id="imageFile" type="file" accept="image/*" />
-          <div id="imageUploadStatus" class="small text-muted mt-1"></div>
+          <div id="imageUploadStatus" class="small text-muted mt-1">Selected image will be referenced from <code>assets/articles/</code>.</div>
         </div>
-        <div class="col-md-6">
+        <div class="col-12">
           <label class="form-label" for="imageCaption">Image caption / credits</label>
           <input class="form-control" id="imageCaption" placeholder="Photo by..., source..." />
         </div>
