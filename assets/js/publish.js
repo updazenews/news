@@ -76,7 +76,10 @@ const authInfo = await guardAdminRoute();
 if (!authInfo) {
   if (guardMessage) { guardMessage.classList.remove("d-none"); guardMessage.textContent = "Unauthorized access."; }
 } else {
-  if (adminUserLabel) adminUserLabel.textContent = `${authInfo.profile.displayName || authInfo.user.email} (${authInfo.role})`;
+  const resolvedAuthorName = (authInfo.profile.displayName || authInfo.user.email || "Updaze Desk").trim();
+  if (adminUserLabel) adminUserLabel.textContent = `${resolvedAuthorName} (${authInfo.role})`;
+  const authorDisplay = document.getElementById("authorDisplay");
+  if (authorDisplay) authorDisplay.value = resolvedAuthorName;
   if (manageUsersLink && canManageUsers(authInfo.role)) manageUsersLink.classList.remove("d-none");
   if (publishedArticlesBody && publishedArticlesStatus) await loadPublishedArticles(authInfo);
 }
@@ -132,7 +135,7 @@ form?.addEventListener("submit", async (event) => {
   const article = {
     title: document.getElementById("title").value.trim(),
     category: document.getElementById("category").value,
-    author: document.getElementById("author").value.trim(),
+    author: (authInfo.profile.displayName || authInfo.user.email || "Updaze Desk").trim(),
     authorUid: authInfo.user.uid,
     imageCaption: document.getElementById("imageCaption").value.trim(),
     excerpt: document.getElementById("excerpt").value.trim(),
