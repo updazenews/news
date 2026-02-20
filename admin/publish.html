@@ -2,21 +2,11 @@
 <html lang="en">
 <head>
   <!-- Google Tag Manager -->
-  <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-  })(window,document,'script','dataLayer','GTM-M42THLLQ');</script>
+  <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-M42THLLQ');</script>
   <!-- End Google Tag Manager -->
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-PHWVGJ3Q72"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-
-    gtag('config', 'G-PHWVGJ3Q72');
-  </script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-PHWVGJ3Q72');</script>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="google-adsense-account" content="ca-pub-5731928992880799" />
@@ -27,96 +17,61 @@
 </head>
 <body class="admin-shell">
   <!-- Google Tag Manager (noscript) -->
-  <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-M42THLLQ"
-  height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+  <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-M42THLLQ" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <!-- End Google Tag Manager (noscript) -->
 
-  <header class="bg-white border-bottom sticky-top">
-    <div class="container py-3 d-flex justify-content-between align-items-center">
-      <h1 class="h4 mb-0">Publish Article</h1>
-      <div class="d-flex align-items-center gap-2">
-        <a class="btn btn-outline-primary btn-sm" href="/admin/index.html">Dashboard</a>
-        <span id="adminUserLabel" class="small text-muted"></span>
-        <button id="logoutBtn" class="btn btn-outline-secondary btn-sm" type="button">Logout</button>
-      </div>
+  <main class="container-fluid py-3">
+    <div class="row g-3">
+      <aside class="col-12 col-lg-3 col-xl-2">
+        <div class="card admin-panel p-3">
+          <h1 class="h5 mb-3">Admin</h1>
+          <nav class="nav flex-column gap-1">
+            <a class="nav-link" href="/admin/index.html">Dashboard</a>
+            <a class="nav-link" href="/admin/my-articles.html">My Articles</a>
+            <a class="nav-link active" href="/admin/publish.html">Publish Article</a>
+            <a class="nav-link" href="/admin/account.html">Manage My Account</a>
+            <a id="manageUsersLink" class="nav-link d-none" href="/admin/manage-users.html">Manage Users</a>
+          </nav>
+          <hr />
+          <p id="adminUserLabel" class="small text-muted mb-2"></p>
+          <button id="logoutBtn" class="btn btn-outline-secondary btn-sm" type="button">Logout</button>
+        </div>
+      </aside>
+
+      <section class="col-12 col-lg-9 col-xl-10">
+        <div id="guardMessage" class="alert alert-warning d-none" role="alert"></div>
+        <section class="card admin-panel p-4 mb-4">
+          <h2 class="h5">Publish Article</h2>
+          <p class="text-muted">Publish to Firestore and show on your hosted site via <code>article.html?slug=[slug]</code>. Images upload to Cloudinary.</p>
+          <form id="publishForm" class="row g-3">
+            <div class="col-md-8"><label class="form-label" for="title">Title</label><input class="form-control" id="title" required /></div>
+            <div class="col-md-4"><label class="form-label" for="category">Category</label><select id="category" class="form-select" required><option value="">Select category</option><option>breaking-news</option><option>politics</option><option>business</option><option>technology</option><option>sports</option><option>entertainment</option><option>health</option><option>world</option><option>opinion</option><option>editorials</option><option>interviews</option><option>podcasts</option></select></div>
+            <div class="col-md-6"><label class="form-label" for="author">Author</label><input class="form-control" id="author" required /></div>
+            <div class="col-md-6"><label class="form-label" for="imageCaption">Image caption / credits</label><input class="form-control" id="imageCaption" placeholder="Photo by..., source..." /></div>
+            <div class="col-12"><label class="form-label" for="imageFile">Upload image (optional)</label><input class="form-control" id="imageFile" type="file" accept="image/*" /><div id="imageUploadStatus" class="small text-muted mt-1">Selected image will be uploaded to Cloudinary during publish.</div></div>
+            <div class="col-12"><label class="form-label" for="excerpt">Excerpt</label><textarea id="excerpt" class="form-control" rows="2" required></textarea></div>
+            <div class="col-12">
+              <label class="form-label" for="content">Article Content</label>
+              <div class="editor-toolbar mb-2" role="toolbar" aria-label="Formatting toolbar">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-format="bold"><strong>B</strong></button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-format="italic"><em>I</em></button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-format="bullet">• List</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-format="number">1. List</button>
+              </div>
+              <textarea id="content" class="form-control" rows="10" required></textarea>
+              <div class="form-text">Formatting supported: **bold**, *italic*, bullet list (- item), numbered list (1. item).</div>
+            </div>
+            <div class="col-12 d-flex gap-2"><button class="btn btn-primary" type="submit">Publish</button><button id="previewBtn" class="btn btn-outline-secondary" type="button">Preview</button></div>
+          </form>
+          <p id="publishMessage" class="mt-3 mb-0 small"></p>
+        </section>
+
+        <section class="card admin-panel p-4">
+          <h2 class="h5">Live Preview</h2>
+          <article id="previewPane" class="editor-preview" aria-live="polite">Fill in the form and click Preview to render article output.</article>
+        </section>
+      </section>
     </div>
-  </header>
-
-  <main class="container py-4">
-    <div id="guardMessage" class="alert alert-warning d-none" role="alert"></div>
-
-    <section class="card admin-panel p-4 mb-4">
-      <h2 class="h5">Publish Article</h2>
-      <p class="text-muted">Publish to Firestore and show on your hosted site via <code>article.html?slug=[slug]</code>. Images are uploaded to Cloudinary.</p>
-      <form id="publishForm" class="row g-3">
-        <div class="col-md-8">
-          <label class="form-label" for="title">Title</label>
-          <input class="form-control" id="title" required />
-        </div>
-        <div class="col-md-4">
-          <label class="form-label" for="category">Category</label>
-          <select id="category" class="form-select" required>
-            <option value="">Select category</option>
-            <option>breaking-news</option>
-            <option>politics</option>
-            <option>business</option>
-            <option>technology</option>
-            <option>sports</option>
-            <option>entertainment</option>
-            <option>health</option>
-            <option>world</option>
-            <option>opinion</option>
-            <option>editorials</option>
-            <option>interviews</option>
-            <option>podcasts</option>
-          </select>
-        </div>
-        <div class="col-md-6">
-          <label class="form-label" for="author">Author</label>
-          <input class="form-control" id="author" required />
-        </div>
-        <div class="col-md-6">
-          <label class="form-label" for="cloudinaryCloudName">Cloudinary Cloud Name</label>
-          <input class="form-control" id="cloudinaryCloudName" placeholder="your-cloud-name" required />
-        </div>
-        <div class="col-md-6">
-          <label class="form-label" for="imageCaption">Image caption / credits</label>
-          <input class="form-control" id="imageCaption" placeholder="Photo by..., source..." />
-        </div>
-        <div class="col-12">
-          <label class="form-label" for="imageFile">Upload image to Assets/Articles (optional)</label>
-          <input class="form-control" id="imageFile" type="file" accept="image/*" />
-          <div id="imageUploadStatus" class="small text-muted mt-1">Selected image will be uploaded to Cloudinary during publish.</div>
-        </div>
-        <div class="col-12">
-          <label class="form-label" for="excerpt">Excerpt</label>
-          <textarea id="excerpt" class="form-control" rows="2" required></textarea>
-        </div>
-        <div class="col-12">
-          <label class="form-label" for="content">Article Content</label>
-          <div class="editor-toolbar mb-2" role="toolbar" aria-label="Formatting toolbar">
-            <button type="button" class="btn btn-sm btn-outline-secondary" data-format="bold"><strong>B</strong></button>
-            <button type="button" class="btn btn-sm btn-outline-secondary" data-format="italic"><em>I</em></button>
-            <button type="button" class="btn btn-sm btn-outline-secondary" data-format="bullet">• List</button>
-            <button type="button" class="btn btn-sm btn-outline-secondary" data-format="number">1. List</button>
-          </div>
-          <textarea id="content" class="form-control" rows="10" required></textarea>
-          <div class="form-text">Formatting supported: **bold**, *italic*, bullet list (- item), numbered list (1. item).</div>
-        </div>
-        <div class="col-12 d-flex gap-2">
-          <button class="btn btn-primary" type="submit">Publish</button>
-          <button id="previewBtn" class="btn btn-outline-secondary" type="button">Preview</button>
-        </div>
-      </form>
-      <p id="publishMessage" class="mt-3 mb-0 small"></p>
-    </section>
-
-    <section class="card admin-panel p-4">
-      <h2 class="h5">Live Preview</h2>
-      <article id="previewPane" class="editor-preview" aria-live="polite">
-        Fill in the form and click Preview to render article output.
-      </article>
-    </section>
   </main>
 
   <script type="module" src="../assets/js/publish.js"></script>

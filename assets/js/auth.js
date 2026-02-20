@@ -1,37 +1,65 @@
 import { auth, db } from "./firebase-config.js";
 import {
+  onAuthStateChanged,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged
+  signOut
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-const ALLOWED_ROLES = ["admin", "super admin", "editor"];
+const ALLOWED_ROLES = ["publisher", "admin", "super admin", "editor"];
 
-export async function getUserRole(uid) {
+export async function getUserProfile(uid) {
   const userRef = doc(db, "users", uid);
   const userSnap = await getDoc(userRef);
-  return userSnap.exists() ? userSnap.data().role : null;
+  return userSnap.exists() ? userSnap.data() : null;
 }
 
-export function guardAdminRoute() {
+export async function getUserRole(uid) {
+  const profile = await getUserProfile(uid);
+  return profile?.role || null;
+}
+
+export function canManageUsers(role) {
+  return role === "admin" || role === "super admin";
+}
+
+export function isSuperAdmin(role) {
+  return role === "super admin";
+}
+
+export async function sendResetEmail(email) {
+  await sendPasswordResetEmail(auth, email);
+}
+
+export async function disableUserRecord(uid, disabled) {
+  const userRef = doc(db, "users", uid);
+  await updateDoc(userRef, {
+    disabled: !!disabled,
+    updatedAt: new Date().toISOString()
+  });
+}
+
+export function guardAdminRoute({ allowRoles = ALLOWED_ROLES, redirectTo = "/admin/login.html" } = {}) {
   return new Promise((resolve) => {
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
-        window.location.href = "/admin/login.html";
+        window.location.href = redirectTo;
         resolve(null);
         return;
       }
 
-      const role = await getUserRole(user.uid);
-      if (!ALLOWED_ROLES.includes(role)) {
+      const profile = await getUserProfile(user.uid);
+      const role = profile?.role;
+
+      if (!profile || !allowRoles.includes(role) || profile.disabled === true) {
         await signOut(auth);
-        window.location.href = "/admin/login.html";
+        window.location.href = redirectTo;
         resolve(null);
         return;
       }
 
-      resolve({ user, role });
+      resolve({ user, role, profile });
     });
   });
 }
@@ -50,11 +78,11 @@ if (loginForm) {
 
     try {
       const credential = await signInWithEmailAndPassword(auth, email, password);
-      const role = await getUserRole(credential.user.uid);
+      const profile = await getUserProfile(credential.user.uid);
 
-      if (!ALLOWED_ROLES.includes(role)) {
+      if (!profile || !ALLOWED_ROLES.includes(profile.role) || profile.disabled === true) {
         await signOut(auth);
-        throw new Error("Unauthorized role.");
+        throw new Error("Unauthorized or disabled account.");
       }
 
       window.location.href = "/admin/index.html";
