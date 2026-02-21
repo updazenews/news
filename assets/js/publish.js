@@ -84,6 +84,22 @@ function normalizeVideoEmbedUrl(input = "") {
   }
 }
 
+
+function updateVideoPreviewField(rawUrl = "") {
+  const wrap = document.getElementById("videoPreviewWrap");
+  const frame = document.getElementById("videoPreviewFrame");
+  if (!wrap || !frame) return "";
+  const embedUrl = normalizeVideoEmbedUrl(rawUrl);
+  if (embedUrl) {
+    frame.src = embedUrl;
+    wrap.classList.remove("d-none");
+  } else {
+    frame.removeAttribute("src");
+    wrap.classList.add("d-none");
+  }
+  return embedUrl;
+}
+
 function renderFormattedContent(rawContent = "") {
   const lines = rawContent.split("\n");
   let html = "";
@@ -332,7 +348,10 @@ async function loadArticleForEditing(slug, authCtx) {
     document.getElementById("content").value = article.content || "";
     document.getElementById("imageCaption").value = article.imageCaption || "";
     const videoUrlField = document.getElementById("videoUrl");
-    if (videoUrlField) videoUrlField.value = article.videoUrl || "";
+    if (videoUrlField) {
+      videoUrlField.value = article.videoUrl || "";
+      updateVideoPreviewField(videoUrlField.value);
+    }
 
     const authorDisplay = document.getElementById("authorDisplay");
     if (authorDisplay) authorDisplay.value = article.author || authorDisplay.value;
@@ -430,13 +449,16 @@ contentField?.addEventListener("keydown", (event) => {
   if (key === "i") { event.preventDefault(); applyEditorFormat("italic"); }
 });
 
+const videoUrlField = document.getElementById("videoUrl");
+videoUrlField?.addEventListener("input", () => updateVideoPreviewField(videoUrlField.value));
+
 document.getElementById("previewBtn")?.addEventListener("click", () => {
   const title = document.getElementById("title").value.trim();
   const content = document.getElementById("content").value.trim();
   const excerpt = document.getElementById("excerpt").value.trim();
   const imageCaption = document.getElementById("imageCaption").value.trim();
   const rawVideoUrl = document.getElementById("videoUrl")?.value?.trim() || "";
-  const embedVideoUrl = normalizeVideoEmbedUrl(rawVideoUrl);
+  const embedVideoUrl = updateVideoPreviewField(rawVideoUrl);
   const file = document.getElementById("imageFile")?.files?.[0];
   const previewImage = file ? `<img src="${URL.createObjectURL(file)}" alt="Preview image" class="img-fluid rounded my-3" />${imageCaption ? `<p class="article-image-caption">${escapeHtml(imageCaption)}</p>` : ""}` : "";
   const previewVideo = embedVideoUrl ? `<div class="ratio ratio-16x9 my-3"><iframe src="${escapeHtml(embedVideoUrl)}" title="Article video preview" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>` : "";
