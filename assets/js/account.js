@@ -1,5 +1,5 @@
 import { auth, db } from "./firebase-config.js";
-import { canManageUsers, guardAdminRoute } from "./auth.js";
+import { canManageUsers, guardAdminRoute, isSuperAdmin, logAdminEvent } from "./auth.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -7,6 +7,7 @@ const authInfo = await guardAdminRoute();
 const guardMessage = document.getElementById("guardMessage");
 const label = document.getElementById("adminUserLabel");
 const manageUsersLink = document.getElementById("manageUsersLink");
+const adminLogsLink = document.getElementById("adminLogsLink");
 const form = document.getElementById("accountForm");
 const msg = document.getElementById("accountMessage");
 const saveProfileBtn = document.getElementById("saveProfileBtn");
@@ -17,6 +18,7 @@ if (!authInfo) {
 } else {
   label.textContent = `${authInfo.profile.displayName || authInfo.user.email} (${authInfo.role})`;
   if (canManageUsers(authInfo.role)) manageUsersLink?.classList.remove("d-none");
+  if (isSuperAdmin(authInfo.role)) adminLogsLink?.classList.remove("d-none");
   document.getElementById("displayName").value = authInfo.profile.displayName || "";
   document.getElementById("cellphone").value = authInfo.profile.cellphone || "";
 }
@@ -49,6 +51,8 @@ form?.addEventListener("submit", async (e) => {
       cellphone,
       updatedAt: new Date().toISOString()
     });
+
+    await logAdminEvent({ eventType: "profile_updated", email: authInfo.user.email || "", uid: authInfo.user.uid, role: authInfo.role, details: "Updated own profile" });
 
     msg.className = "small mt-3 mb-0 text-success";
     msg.textContent = "Profile updated successfully.";

@@ -1,5 +1,5 @@
 import { auth, db } from "./firebase-config.js";
-import { canManageUsers, guardAdminRoute, isSuperAdmin, sendResetEmail } from "./auth.js";
+import { canManageUsers, guardAdminRoute, isSuperAdmin, logAdminEvent, sendResetEmail } from "./auth.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { collection, doc, getDocs, query, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -14,12 +14,14 @@ const addUserForm = document.getElementById("addUserForm");
 const addUserMessage = document.getElementById("addUserMessage");
 const addUserBtn = document.getElementById("addUserBtn");
 const newUserRole = document.getElementById("newUserRole");
+const adminLogsLink = document.getElementById("adminLogsLink");
 
 if (!authInfo || !canManageUsers(authInfo.role)) {
   guardMessage?.classList.remove("d-none");
   if (guardMessage) guardMessage.textContent = "Unauthorized access.";
 } else {
   label.textContent = `${authInfo.profile.displayName || authInfo.user.email} (${authInfo.role})`;
+  if (isSuperAdmin(authInfo.role)) adminLogsLink?.classList.remove("d-none");
   if (!isSuperAdmin(authInfo.role)) {
     const superAdminOption = [...newUserRole.options].find((option) => option.value === "super admin");
     superAdminOption?.remove();
@@ -92,6 +94,7 @@ body?.addEventListener("click", async (e) => {
         },
         { merge: true }
       );
+      await logAdminEvent({ eventType: "user_updated", email: authInfo.user.email || "", uid: authInfo.user.uid, role: authInfo.role, details: `Updated user ${uid}` });
       alert("User changes saved.");
     } catch (error) {
       alert(`Unable to save user: ${error.message}`);
@@ -110,6 +113,7 @@ body?.addEventListener("click", async (e) => {
     try {
       btn.disabled = true;
       await sendResetEmail(email);
+      await logAdminEvent({ eventType: "user_password_reset", email: authInfo.user.email || "", uid: authInfo.user.uid, role: authInfo.role, details: `Sent password reset to ${email}` });
       alert("Password reset email sent.");
     } catch (error) {
       alert(`Reset failed: ${error.message}`);
@@ -167,6 +171,7 @@ addUserForm?.addEventListener("submit", async (event) => {
       updatedAt: new Date().toISOString()
     }, { merge: true });
 
+    await logAdminEvent({ eventType: "user_added", email: authInfo.user.email || "", uid: authInfo.user.uid, role: authInfo.role, details: `Added user ${email}` });
     addUserMessage.className = "small text-success";
     addUserMessage.textContent = "User created successfully.";
     addUserForm.reset();

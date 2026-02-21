@@ -31,6 +31,11 @@ async function logAuthEvent({ eventType, status, email = "", uid = "", role = ""
   }
 }
 
+
+export async function logAdminEvent({ eventType, status = "success", email = "", uid = "", role = "", details = "" }) {
+  await logAuthEvent({ eventType, status, email, uid, role, details });
+}
+
 export async function getUserProfile(uid) {
   const userRef = doc(db, "users", uid);
   const userSnap = await getDoc(userRef);
