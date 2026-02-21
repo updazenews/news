@@ -52,11 +52,11 @@
             <div class="col-md-6"><label class="form-label">Author</label><input class="form-control" id="authorDisplay" value="Signed in user" disabled /></div>
             <div class="col-md-6"><label class="form-label" for="imageCaption">Image caption / credits</label><input class="form-control" id="imageCaption" placeholder="Photo by..., source..." /></div>
             <div class="col-12"><label class="form-label" for="imageFile">Upload image (optional)</label><input class="form-control" id="imageFile" type="file" accept="image/*" /><div id="imageUploadStatus" class="small text-muted mt-1">Selected image will be uploaded to Cloudinary during publish.</div></div>
-            <div class="col-12"><label class="form-label" for="videoUrl">Video Link (optional)</label><input class="form-control" id="videoUrl" type="url" placeholder="https://www.youtube.com/watch?v=..." /><div class="form-text">Paste a YouTube, Vimeo, or direct embed link to attach a video.</div></div>
+            <div class="col-12"><label class="form-label" for="videoUrl">Video Link (optional)</label><input class="form-control" id="videoUrl" type="url" placeholder="https://www.youtube.com/watch?v=..." /><div class="form-text">Paste a YouTube or Vimeo link. Direct downloadable video files are blocked for protection.</div></div>
             <div id="videoPreviewWrap" class="col-12 d-none">
               <label class="form-label">Video Preview</label>
               <div class="ratio ratio-16x9">
-                <iframe id="videoPreviewFrame" title="Article video preview" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+                <iframe id="videoPreviewFrame" title="Article video preview" loading="lazy" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-presentation" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
               </div>
             </div>
             <div class="col-12"><label class="form-label" for="excerpt">Excerpt</label><textarea id="excerpt" class="form-control" rows="2" required></textarea></div>

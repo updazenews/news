@@ -89,12 +89,13 @@
       </header>
       <img id="articleImage" class="img-fluid rounded mb-2 d-none" alt="Article feature" />
       <p id="articleImageCaption" class="article-image-caption d-none"></p>
-      <section id="articleVideoWrap" class="my-3 d-none">
+      <section id="articleBody" class="fs-5 lh-lg"></section>
+      <section id="articleVideoWrap" class="my-4 d-none">
+        <h2 class="h6 mb-2">Article Video</h2>
         <div class="ratio ratio-16x9">
-          <iframe id="articleVideoFrame" title="Embedded article video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+          <iframe id="articleVideoFrame" title="Embedded article video" loading="lazy" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-presentation" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
         </div>
       </section>
-      <section id="articleBody" class="fs-5 lh-lg"></section>
       <section class="mt-4">
         <h2 class="h6">Share this article</h2>
         <div class="d-flex flex-wrap gap-2" id="shareButtons">

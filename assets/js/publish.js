@@ -60,13 +60,16 @@ function normalizeVideoEmbedUrl(input = "") {
 
     if (host === "youtube.com" || host === "m.youtube.com") {
       const videoId = parsed.searchParams.get("v");
-      if (videoId) return `https://www.youtube.com/embed/${videoId}`;
-      if (parsed.pathname.startsWith("/embed/")) return input.trim();
+      if (videoId) return `https://www.youtube-nocookie.com/embed/${videoId}?rel=0&modestbranding=1`;
+      if (parsed.pathname.startsWith("/embed/")) {
+        const id = parsed.pathname.split("/embed/")[1]?.split("/")[0];
+        if (id) return `https://www.youtube-nocookie.com/embed/${id}?rel=0&modestbranding=1`;
+      }
     }
 
     if (host === "youtu.be") {
       const videoId = parsed.pathname.replace(/^\//, "");
-      if (videoId) return `https://www.youtube.com/embed/${videoId}`;
+      if (videoId) return `https://www.youtube-nocookie.com/embed/${videoId}?rel=0&modestbranding=1`;
     }
 
     if (host === "vimeo.com") {
@@ -78,7 +81,7 @@ function normalizeVideoEmbedUrl(input = "") {
       return input.trim();
     }
 
-    return input.trim();
+    return "";
   } catch {
     return "";
   }
