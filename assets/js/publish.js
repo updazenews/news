@@ -52,6 +52,38 @@ function formatPublishDate(rawValue) { if (!rawValue) return "-"; if (typeof raw
 function escapeHtml(value = "") { const map = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }; return value.replace(/[&<>"']/g, (char) => map[char]); }
 function formatInlineMarkdown(text = "") { return text.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/\*(.+?)\*/g, "<em>$1</em>"); }
 
+function normalizeVideoEmbedUrl(input = "") {
+  if (!input) return "";
+  try {
+    const parsed = new URL(input.trim());
+    const host = parsed.hostname.replace(/^www\./, "").toLowerCase();
+
+    if (host === "youtube.com" || host === "m.youtube.com") {
+      const videoId = parsed.searchParams.get("v");
+      if (videoId) return `https://www.youtube.com/embed/${videoId}`;
+      if (parsed.pathname.startsWith("/embed/")) return input.trim();
+    }
+
+    if (host === "youtu.be") {
+      const videoId = parsed.pathname.replace(/^\//, "");
+      if (videoId) return `https://www.youtube.com/embed/${videoId}`;
+    }
+
+    if (host === "vimeo.com") {
+      const videoId = parsed.pathname.replace(/^\//, "").split("/")[0];
+      if (videoId) return `https://player.vimeo.com/video/${videoId}`;
+    }
+
+    if (host === "player.vimeo.com" && parsed.pathname.startsWith("/video/")) {
+      return input.trim();
+    }
+
+    return input.trim();
+  } catch {
+    return "";
+  }
+}
+
 function renderFormattedContent(rawContent = "") {
   const lines = rawContent.split("\n");
   let html = "";
@@ -299,6 +331,8 @@ async function loadArticleForEditing(slug, authCtx) {
     document.getElementById("excerpt").value = article.excerpt || "";
     document.getElementById("content").value = article.content || "";
     document.getElementById("imageCaption").value = article.imageCaption || "";
+    const videoUrlField = document.getElementById("videoUrl");
+    if (videoUrlField) videoUrlField.value = article.videoUrl || "";
 
     const authorDisplay = document.getElementById("authorDisplay");
     if (authorDisplay) authorDisplay.value = article.author || authorDisplay.value;
@@ -401,9 +435,12 @@ document.getElementById("previewBtn")?.addEventListener("click", () => {
   const content = document.getElementById("content").value.trim();
   const excerpt = document.getElementById("excerpt").value.trim();
   const imageCaption = document.getElementById("imageCaption").value.trim();
+  const rawVideoUrl = document.getElementById("videoUrl")?.value?.trim() || "";
+  const embedVideoUrl = normalizeVideoEmbedUrl(rawVideoUrl);
   const file = document.getElementById("imageFile")?.files?.[0];
   const previewImage = file ? `<img src="${URL.createObjectURL(file)}" alt="Preview image" class="img-fluid rounded my-3" />${imageCaption ? `<p class="article-image-caption">${escapeHtml(imageCaption)}</p>` : ""}` : "";
-  if (previewPane) previewPane.innerHTML = `<h3>${escapeHtml(title || "Untitled draft")}</h3><p class="text-muted">${escapeHtml(excerpt)}</p>${previewImage}${renderFormattedContent(content)}`;
+  const previewVideo = embedVideoUrl ? `<div class="ratio ratio-16x9 my-3"><iframe src="${escapeHtml(embedVideoUrl)}" title="Article video preview" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>` : "";
+  if (previewPane) previewPane.innerHTML = `<h3>${escapeHtml(title || "Untitled draft")}</h3><p class="text-muted">${escapeHtml(excerpt)}</p>${previewImage}${previewVideo}${renderFormattedContent(content)}`;
 });
 
 form?.addEventListener("submit", async (event) => {
@@ -416,6 +453,7 @@ form?.addEventListener("submit", async (event) => {
     author: (authInfo.profile.displayName || authInfo.user.email || "Updaze Desk").trim(),
     authorUid: authInfo.user.uid,
     imageCaption: document.getElementById("imageCaption").value.trim(),
+    videoUrl: normalizeVideoEmbedUrl(document.getElementById("videoUrl")?.value?.trim() || ""),
     excerpt: document.getElementById("excerpt").value.trim(),
     content: document.getElementById("content").value.trim(),
     status: "published"

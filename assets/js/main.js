@@ -91,6 +91,36 @@ function setArticleMeta(article, articleUrl) {
   script.textContent = JSON.stringify(jsonLd);
 }
 
+function normalizeVideoEmbedUrl(input = "") {
+  if (!input) return "";
+  try {
+    const parsed = new URL(input.trim());
+    const host = parsed.hostname.replace(/^www\./, "").toLowerCase();
+
+    if (host === "youtube.com" || host === "m.youtube.com") {
+      const videoId = parsed.searchParams.get("v");
+      if (videoId) return `https://www.youtube.com/embed/${videoId}`;
+      if (parsed.pathname.startsWith("/embed/")) return input.trim();
+    }
+
+    if (host === "youtu.be") {
+      const videoId = parsed.pathname.replace(/^\//, "");
+      if (videoId) return `https://www.youtube.com/embed/${videoId}`;
+    }
+
+    if (host === "vimeo.com") {
+      const videoId = parsed.pathname.replace(/^\//, "").split("/")[0];
+      if (videoId) return `https://player.vimeo.com/video/${videoId}`;
+    }
+
+    if (host === "player.vimeo.com" && parsed.pathname.startsWith("/video/")) return input.trim();
+
+    return input.trim();
+  } catch {
+    return "";
+  }
+}
+
 function setShareLinks(article, articleUrl) {
   const text = encodeURIComponent(article.title || "Updaze News");
   const url = encodeURIComponent(articleUrl);
@@ -170,6 +200,14 @@ async function initArticlePage() {
   if (article.imageUrl) { const image = document.getElementById("articleImage"); image.src = article.imageUrl; image.classList.remove("d-none"); }
   const imageCaption = document.getElementById("articleImageCaption");
   if (imageCaption && article.imageCaption) { imageCaption.textContent = article.imageCaption; imageCaption.classList.remove("d-none"); }
+
+  const videoWrap = document.getElementById("articleVideoWrap");
+  const videoFrame = document.getElementById("articleVideoFrame");
+  const embedVideoUrl = normalizeVideoEmbedUrl(article.videoUrl || "");
+  if (videoWrap && videoFrame && embedVideoUrl) {
+    videoFrame.src = embedVideoUrl;
+    videoWrap.classList.remove("d-none");
+  }
 
   toggleLoading("articleLoadingSpinner", "articleContent", false);
   await incrementArticleView(slug);

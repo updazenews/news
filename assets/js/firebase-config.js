@@ -31,6 +31,7 @@ export const db = getFirestore(app);
  *    - author: string
  *    - imageUrl: string
  *    - imageCaption: string
+ *    - videoUrl: string (optional)
  *    - publishedAt: timestamp
  *    - updatedAt: timestamp
  *    - status: "published"
