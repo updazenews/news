@@ -192,3 +192,24 @@ body {
   width: 64px;
   height: 64px;
 }
+
+
+.top-story-carousel-item {
+  min-height: 360px;
+  background-size: cover;
+  background-position: center;
+  border-radius: 0.9rem;
+}
+
+.top-story-overlay {
+  min-height: 360px;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+#topStoryCarousel .carousel-control-prev,
+#topStoryCarousel .carousel-control-next {
+  width: 8%;
+}

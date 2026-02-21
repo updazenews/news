@@ -85,14 +85,24 @@
 
   <main class="main-content">
     <section class="container-xl py-4">
-      <article class="hero-card card p-4 p-md-5 mb-4" aria-labelledby="hero-title">
+      <article class="hero-card card mb-4" aria-label="Top stories carousel">
         <div id="topStoryLoader" class="spinner-wrap text-center py-3">
-          <div class="spinner-border text-light" role="status" aria-label="Loading top story"></div>
+          <div class="spinner-border text-light" role="status" aria-label="Loading top stories"></div>
         </div>
-        <p id="topStoryCategory" class="text-uppercase mb-2 fw-semibold d-none">Top Story</p>
-        <h1 id="hero-title" class="display-6 d-none">Your trusted source for verified headlines and real-time context.</h1>
-        <p id="hero-summary" class="lead mb-3 d-none">Get updates from politics, business, technology, sports and world news—curated for clarity and speed.</p>
-        <a id="hero-link" class="btn btn-light btn-sm d-none" href="#">Read Top Story</a>
+        <div id="topStoryCarouselWrap" class="d-none">
+          <div id="topStoryCarousel" class="carousel slide" data-bs-ride="carousel">
+            <div id="topStoryIndicators" class="carousel-indicators"></div>
+            <div id="topStoryCarouselInner" class="carousel-inner"></div>
+            <button class="carousel-control-prev" type="button" data-bs-target="#topStoryCarousel" data-bs-slide="prev">
+              <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+              <span class="visually-hidden">Previous</span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#topStoryCarousel" data-bs-slide="next">
+              <span class="carousel-control-next-icon" aria-hidden="true"></span>
+              <span class="visually-hidden">Next</span>
+            </button>
+          </div>
+        </div>
       </article>
 
       <section aria-labelledby="latest-headlines-title">

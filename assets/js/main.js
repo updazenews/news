@@ -1,4 +1,4 @@
-import { fetchArticleBySlug, fetchArticles, fetchMostViewedArticle, getArticleViewCount, incrementArticleView, renderArticleCards } from "./articles.js";
+import { fetchArticleBySlug, fetchArticles, fetchTopViewedArticles, getArticleViewCount, incrementArticleView, renderArticleCards } from "./articles.js";
 
 const params = new URLSearchParams(window.location.search);
 
@@ -112,18 +112,34 @@ async function initHomePage() {
   toggleLoading("homeLoadingSpinner", "homeArticleList", true);
   const articles = await fetchArticles(); renderArticleCards("homeArticleList", articles);
   toggleLoading("homeLoadingSpinner", "homeArticleList", false);
-  const topStory = await fetchMostViewedArticle();
+  const topStories = await fetchTopViewedArticles(3);
   const topStoryLoader = document.getElementById("topStoryLoader");
-  const topStoryCategory = document.getElementById("topStoryCategory");
-  const heroTitle = document.getElementById("hero-title");
-  const heroSummary = document.getElementById("hero-summary");
-  const heroLink = document.getElementById("hero-link");
+  const carouselWrap = document.getElementById("topStoryCarouselWrap");
+  const indicators = document.getElementById("topStoryIndicators");
+  const inner = document.getElementById("topStoryCarouselInner");
   if (topStoryLoader) topStoryLoader.classList.add("d-none");
-  if (!topStory) return;
-  if (topStoryCategory) { topStoryCategory.classList.remove("d-none"); topStoryCategory.textContent = `Top Story • ${topStory.category || "general"}`; }
-  if (heroTitle) { heroTitle.classList.remove("d-none"); heroTitle.textContent = topStory.title || "Top Story"; }
-  if (heroSummary) { heroSummary.classList.remove("d-none"); heroSummary.textContent = topStory.excerpt || "Read the most viewed story right now."; }
-  if (heroLink && topStory.slug) { heroLink.href = `article.html?slug=${topStory.slug}`; heroLink.classList.remove("d-none"); }
+  if (!topStories.length || !indicators || !inner || !carouselWrap) return;
+
+  indicators.innerHTML = topStories.map((article, idx) => `
+    <button type="button" data-bs-target="#topStoryCarousel" data-bs-slide-to="${idx}" class="${idx === 0 ? "active" : ""}" aria-current="${idx === 0 ? "true" : "false"}" aria-label="Slide ${idx + 1}"></button>
+  `).join("");
+
+  inner.innerHTML = topStories.map((article, idx) => {
+    const bg = article.imageUrl ? `style="background-image: linear-gradient(rgba(10,18,30,0.55), rgba(10,18,30,0.35)), url('${article.imageUrl}')"` : "";
+    return `
+    <div class="carousel-item ${idx === 0 ? "active" : ""}">
+      <div class="top-story-carousel-item" ${bg}>
+        <div class="top-story-overlay p-4 p-md-5">
+          <p class="text-uppercase mb-2 fw-semibold">Top Story #${idx + 1} • ${article.category || "general"}</p>
+          <h1 class="display-6">${escapeHtml(article.title || "Top Story")}</h1>
+          <p class="lead mb-3">${escapeHtml(article.excerpt || "Read one of the most viewed stories right now.")}</p>
+          <a class="btn btn-light btn-sm" href="article.html?slug=${encodeURIComponent(article.slug || "")}">Read Top Story</a>
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+
+  carouselWrap.classList.remove("d-none");
 }
 
 async function initCategoryPage() {

@@ -61,6 +61,12 @@ export async function fetchMostViewedArticle() {
   return [...articles].sort((a, b) => getArticleViewCount(b) - getArticleViewCount(a))[0];
 }
 
+export async function fetchTopViewedArticles(limitCount = 3) {
+  const articles = await fetchArticles();
+  if (!articles.length) return [];
+  return [...articles].sort((a, b) => getArticleViewCount(b) - getArticleViewCount(a)).slice(0, Math.max(1, limitCount));
+}
+
 export async function fetchArticleBySlug(slug) {
   try {
     const articleRef = doc(db, "articles", slug);
