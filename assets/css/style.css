@@ -186,3 +186,9 @@ body {
   object-fit: contain;
   border-radius: 0.4rem;
 }
+
+
+.login-logo {
+  width: 64px;
+  height: 64px;
+}

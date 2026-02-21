@@ -75,8 +75,16 @@ const adminUserLabel = document.getElementById("adminUserLabel");
 const publishedArticlesBody = document.getElementById("publishedArticlesBody");
 const publishedArticlesStatus = document.getElementById("publishedArticlesStatus");
 const manageUsersLink = document.getElementById("manageUsersLink");
+const dashboardAnalyticsStatus = document.getElementById("dashboardAnalyticsStatus");
+const analyticsTotalArticles = document.getElementById("analyticsTotalArticles");
+const analyticsTotalViews = document.getElementById("analyticsTotalViews");
+const analyticsTopCategory = document.getElementById("analyticsTopCategory");
+const categoryChart = document.getElementById("categoryChart");
+const viewsChart = document.getElementById("viewsChart");
 const editSlug = new URLSearchParams(window.location.search).get("edit");
 let editingArticleSlug = "";
+let categoryChartInstance = null;
+let viewsChartInstance = null;
 
 const authInfo = await guardAdminRoute();
 if (!authInfo) {
@@ -88,7 +96,67 @@ if (!authInfo) {
   if (authorDisplay) authorDisplay.value = resolvedAuthorName;
   if (manageUsersLink && canManageUsers(authInfo.role)) manageUsersLink.classList.remove("d-none");
   if (editSlug && form) await loadArticleForEditing(editSlug, authInfo);
+  if (categoryChart && viewsChart && dashboardAnalyticsStatus) await loadDashboardAnalytics(authInfo);
   if (publishedArticlesBody && publishedArticlesStatus) await loadPublishedArticles(authInfo);
+}
+
+async function loadDashboardAnalytics(authCtx) {
+  dashboardAnalyticsStatus.textContent = "Loading analytics...";
+  try {
+    const constraints = [where("status", "==", "published"), orderBy("publishedAt", "desc"), limit(100)];
+    if (authCtx.role === "publisher") constraints.unshift(where("authorUid", "==", authCtx.user.uid));
+
+    const snap = await getDocs(query(collection(db, "articles"), ...constraints));
+    const articles = snap.docs.map((item) => ({ id: item.id, ...item.data() }));
+    const totalArticles = articles.length;
+    const totalViews = articles.reduce((sum, article) => sum + Number(article.viewCount || 0), 0);
+
+    const categoryTotals = articles.reduce((acc, article) => {
+      const category = (article.category || "general").toLowerCase();
+      acc[category] = (acc[category] || 0) + 1;
+      return acc;
+    }, {});
+
+    const sortedCategories = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1]);
+    const topCategory = sortedCategories.length ? sortedCategories[0][0] : "-";
+
+    if (analyticsTotalArticles) analyticsTotalArticles.textContent = `${totalArticles}`;
+    if (analyticsTotalViews) analyticsTotalViews.textContent = totalViews.toLocaleString();
+    if (analyticsTopCategory) analyticsTopCategory.textContent = topCategory;
+
+    if (!window.Chart) {
+      dashboardAnalyticsStatus.textContent = "Analytics loaded (chart library unavailable in this browser).";
+      return;
+    }
+
+    const topViewed = [...articles]
+      .sort((a, b) => Number(b.viewCount || 0) - Number(a.viewCount || 0))
+      .slice(0, 7);
+
+    if (categoryChartInstance) categoryChartInstance.destroy();
+    categoryChartInstance = new window.Chart(categoryChart, {
+      type: "bar",
+      data: {
+        labels: sortedCategories.map(([name]) => name.toUpperCase()),
+        datasets: [{ label: "Articles", data: sortedCategories.map(([, count]) => count), backgroundColor: "rgba(31,109,168,0.75)" }]
+      },
+      options: { responsive: true, plugins: { legend: { display: false } } }
+    });
+
+    if (viewsChartInstance) viewsChartInstance.destroy();
+    viewsChartInstance = new window.Chart(viewsChart, {
+      type: "line",
+      data: {
+        labels: topViewed.map((item) => (item.title || "Untitled").slice(0, 30)),
+        datasets: [{ label: "Views", data: topViewed.map((item) => Number(item.viewCount || 0)), borderColor: "rgba(140,63,151,1)", backgroundColor: "rgba(140,63,151,0.2)", tension: 0.25, fill: true }]
+      },
+      options: { responsive: true }
+    });
+
+    dashboardAnalyticsStatus.textContent = `Analytics updated for ${totalArticles} published article(s).`;
+  } catch (error) {
+    dashboardAnalyticsStatus.textContent = `Unable to load analytics: ${error.message}`;
+  }
 }
 
 async function loadPublishedArticles(authCtx) {
