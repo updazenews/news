@@ -5,9 +5,31 @@ import {
   signInWithEmailAndPassword,
   signOut
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { doc, getDoc, serverTimestamp, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const ALLOWED_ROLES = ["publisher", "admin", "super admin", "editor"];
+
+function logId(prefix = "log") {
+  if (crypto?.randomUUID) return `${prefix}_${crypto.randomUUID()}`;
+  return `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2, 8)}`;
+}
+
+async function logAuthEvent({ eventType, status, email = "", uid = "", role = "", details = "" }) {
+  try {
+    await setDoc(doc(db, "admin_logs", logId(eventType.replace(/\s+/g, "_"))), {
+      eventType,
+      status,
+      email,
+      uid,
+      role,
+      details,
+      timestamp: new Date().toISOString(),
+      createdAt: serverTimestamp()
+    }, { merge: true });
+  } catch (_error) {
+    // do not block auth flow
+  }
+}
 
 export async function getUserProfile(uid) {
   const userRef = doc(db, "users", uid);
@@ -59,6 +81,17 @@ export function guardAdminRoute({ allowRoles = ALLOWED_ROLES, redirectTo = "/adm
         return;
       }
 
+      if (["admin", "super admin", "editor"].includes(role)) {
+        await logAuthEvent({
+          eventType: "admin_portal_access",
+          status: "success",
+          email: user.email || "",
+          uid: user.uid,
+          role,
+          details: `${role} accessed admin portal`
+        });
+      }
+
       resolve({ user, role, profile });
     });
   });
@@ -92,11 +125,34 @@ if (loginForm) {
 
       if (!profile || !ALLOWED_ROLES.includes(profile.role) || profile.disabled === true) {
         await signOut(auth);
+        await logAuthEvent({
+          eventType: "admin_login",
+          status: "failed",
+          email,
+          uid: credential.user.uid,
+          role: profile?.role || "unknown",
+          details: "Unauthorized or disabled account"
+        });
         throw new Error("Unauthorized or disabled account.");
       }
 
+      await logAuthEvent({
+        eventType: "admin_login",
+        status: "success",
+        email,
+        uid: credential.user.uid,
+        role: profile.role,
+        details: "Login successful"
+      });
+
       window.location.href = "/admin/index.html";
     } catch (error) {
+      await logAuthEvent({
+        eventType: "admin_login",
+        status: "failed",
+        email,
+        details: error.message
+      });
       loginMessage.textContent = `Login failed: ${error.message}`;
       loginMessage.className = "small mb-3 text-danger";
     }

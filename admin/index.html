@@ -58,6 +58,18 @@
             <div class="col-12 col-lg-6"><div class="card p-3"><h3 class="h6">Top Viewed Articles</h3><canvas id="viewsChart" height="220"></canvas></div></div>
           </div>
         </section>
+        <section id="adminLogsSection" class="card admin-panel p-4 d-none">
+          <h2 class="h5 mb-2">Super Admin Activity Logs</h2>
+          <p id="adminLogsStatus" class="small text-muted mb-3">Loading logs...</p>
+          <div class="table-responsive">
+            <table class="table align-middle">
+              <thead>
+                <tr><th>Event</th><th>Status</th><th>User</th><th>Details</th><th>Time</th></tr>
+              </thead>
+              <tbody id="adminLogsBody"><tr><td colspan="5" class="text-muted">Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </section>
       </section>
     </div>
   </main>
