@@ -25,6 +25,8 @@ function renderFormattedContent(rawContent = "") {
   lines.forEach((line) => {
     const trimmed = line.trim();
     if (!trimmed) { closeLists(); return; }
+    if (/^###\s+/.test(trimmed)) { closeLists(); html += `<h3>${formatInlineMarkdown(escapeHtml(trimmed.replace(/^###\s+/, "")))}</h3>`; return; }
+    if (/^##\s+/.test(trimmed)) { closeLists(); html += `<h2>${formatInlineMarkdown(escapeHtml(trimmed.replace(/^##\s+/, "")))}</h2>`; return; }
     if (/^[-*]\s+/.test(trimmed)) { if (inOl) { html += "</ol>"; inOl = false; } if (!inUl) { html += "<ul>"; inUl = true; } html += `<li>${formatInlineMarkdown(escapeHtml(trimmed.replace(/^[-*]\s+/, "")))}</li>`; return; }
     if (/^\d+\.\s+/.test(trimmed)) { if (inUl) { html += "</ul>"; inUl = false; } if (!inOl) { html += "<ol>"; inOl = true; } html += `<li>${formatInlineMarkdown(escapeHtml(trimmed.replace(/^\d+\.\s+/, "")))}</li>`; return; }
     closeLists(); html += `<p>${formatInlineMarkdown(escapeHtml(trimmed))}</p>`;

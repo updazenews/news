@@ -1,7 +1,7 @@
 import { auth, db } from "./firebase-config.js";
 import { canManageUsers, guardAdminRoute, isSuperAdmin } from "./auth.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { collection, doc, getDocs, limit, orderBy, query, serverTimestamp, setDoc, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { collection, doc, getDoc, getDocs, limit, orderBy, query, serverTimestamp, setDoc, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const CLOUDINARY_CLOUD_NAME = "dtrvtmpu5";
 const CLOUDINARY_API_KEY = "426579875859513";
@@ -19,6 +19,8 @@ function renderFormattedContent(rawContent = "") {
   const closeLists = () => { if (inUl) { html += "</ul>"; inUl = false; } if (inOl) { html += "</ol>"; inOl = false; } };
   lines.forEach((line) => {
     const trimmed = line.trim(); if (!trimmed) { closeLists(); return; }
+    if (/^###\s+/.test(trimmed)) { closeLists(); html += `<h3>${formatInlineMarkdown(escapeHtml(trimmed.replace(/^###\s+/, "")))}</h3>`; return; }
+    if (/^##\s+/.test(trimmed)) { closeLists(); html += `<h2>${formatInlineMarkdown(escapeHtml(trimmed.replace(/^##\s+/, "")))}</h2>`; return; }
     if (/^[-*]\s+/.test(trimmed)) { if (inOl) { html += "</ol>"; inOl = false; } if (!inUl) { html += "<ul>"; inUl = true; } html += `<li>${formatInlineMarkdown(escapeHtml(trimmed.replace(/^[-*]\s+/, "")))}</li>`; return; }
     if (/^\d+\.\s+/.test(trimmed)) { if (inUl) { html += "</ul>"; inUl = false; } if (!inOl) { html += "<ol>"; inOl = true; } html += `<li>${formatInlineMarkdown(escapeHtml(trimmed.replace(/^\d+\.\s+/, "")))}</li>`; return; }
     closeLists(); html += `<p>${formatInlineMarkdown(escapeHtml(trimmed))}</p>`;
@@ -31,6 +33,8 @@ function applyEditorFormat(type) {
   const start = contentField.selectionStart; const end = contentField.selectionEnd; const selected = contentField.value.slice(start, end);
   if (type === "bold") contentField.setRangeText(`**${selected || "bold text"}**`, start, end, "end");
   if (type === "italic") contentField.setRangeText(`*${selected || "italic text"}*`, start, end, "end");
+  if (type === "h2") contentField.setRangeText(`## ${selected || "Heading"}`, start, end, "end");
+  if (type === "h3") contentField.setRangeText(`### ${selected || "Subtitle"}`, start, end, "end");
   if (type === "bullet" || type === "number") {
     const lines = (selected || "list item").split("\n").filter(Boolean);
     contentField.setRangeText(lines.map((line, idx) => (type === "bullet" ? `- ${line}` : `${idx + 1}. ${line}`)).join("\n"), start, end, "end");
@@ -71,6 +75,8 @@ const adminUserLabel = document.getElementById("adminUserLabel");
 const publishedArticlesBody = document.getElementById("publishedArticlesBody");
 const publishedArticlesStatus = document.getElementById("publishedArticlesStatus");
 const manageUsersLink = document.getElementById("manageUsersLink");
+const editSlug = new URLSearchParams(window.location.search).get("edit");
+let editingArticleSlug = "";
 
 const authInfo = await guardAdminRoute();
 if (!authInfo) {
@@ -81,6 +87,7 @@ if (!authInfo) {
   const authorDisplay = document.getElementById("authorDisplay");
   if (authorDisplay) authorDisplay.value = resolvedAuthorName;
   if (manageUsersLink && canManageUsers(authInfo.role)) manageUsersLink.classList.remove("d-none");
+  if (editSlug && form) await loadArticleForEditing(editSlug, authInfo);
   if (publishedArticlesBody && publishedArticlesStatus) await loadPublishedArticles(authInfo);
 }
 
@@ -103,20 +110,70 @@ async function loadPublishedArticles(authCtx) {
       const article = item.data();
       const articleUrl = toArticleUrl(article.slug || item.id);
       if (window.location.pathname.endsWith("/my-articles.html")) {
-        return `<tr><td>${article.title || "Untitled"}</td><td class="text-uppercase">${article.category || "general"}</td><td>${formatPublishDate(article.publishedAt)}</td><td>${Number(article.viewCount || 0)}</td><td><a class="btn btn-sm btn-outline-primary" href="${articleUrl}" target="_blank" rel="noopener">View</a></td></tr>`;
+        return `<tr><td>${article.title || "Untitled"}</td><td class="text-uppercase">${article.category || "general"}</td><td>${formatPublishDate(article.publishedAt)}</td><td>${Number(article.viewCount || 0)}</td><td class="d-flex gap-1"><a class="btn btn-sm btn-outline-primary" href="${articleUrl}" target="_blank" rel="noopener">View</a><a class="btn btn-sm btn-outline-secondary" href="/admin/publish.html?edit=${encodeURIComponent(article.slug || item.id)}">Edit</a></td></tr>`;
       }
-      return `<tr><td>${article.title || "Untitled"}</td><td class="text-uppercase">${article.category || "general"}</td><td>${article.author || "Updaze Desk"}</td><td>${formatPublishDate(article.publishedAt)}</td><td>${Number(article.viewCount || 0)}</td><td><a class="btn btn-sm btn-outline-primary" href="${articleUrl}" target="_blank" rel="noopener">View</a></td></tr>`;
+      return `<tr><td>${article.title || "Untitled"}</td><td class="text-uppercase">${article.category || "general"}</td><td>${article.author || "Updaze Desk"}</td><td>${formatPublishDate(article.publishedAt)}</td><td>${Number(article.viewCount || 0)}</td><td class="d-flex gap-1"><a class="btn btn-sm btn-outline-primary" href="${articleUrl}" target="_blank" rel="noopener">View</a><a class="btn btn-sm btn-outline-secondary" href="/admin/publish.html?edit=${encodeURIComponent(article.slug || item.id)}">Edit</a></td></tr>`;
     }).join("");
 
     publishedArticlesStatus.textContent = `Showing ${snap.size} articles.`;
   } catch (error) {
-    publishedArticlesBody.innerHTML = '<tr><td colspan="6" class="text-danger">Unable to load articles.</td></tr>';
+    const col = window.location.pathname.endsWith('/my-articles.html') ? 5 : 6;
+    publishedArticlesBody.innerHTML = `<tr><td colspan="${col}" class="text-danger">Unable to load articles.</td></tr>`;
     publishedArticlesStatus.textContent = `Error: ${error.message}`;
+  }
+}
+
+async function loadArticleForEditing(slug, authCtx) {
+  try {
+    const ref = doc(db, "articles", slug);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return;
+    const article = snap.data();
+    if ((authCtx.role === "publisher" || authCtx.role === "editor") && article.authorUid !== authCtx.user.uid) {
+      if (guardMessage) {
+        guardMessage.classList.remove("d-none");
+        guardMessage.textContent = "You can only edit your own articles.";
+      }
+      return;
+    }
+
+    editingArticleSlug = slug;
+    document.getElementById("publishFormTitle").textContent = "Edit Article";
+    document.getElementById("title").value = article.title || "";
+    document.getElementById("category").value = article.category || "";
+    document.getElementById("excerpt").value = article.excerpt || "";
+    document.getElementById("content").value = article.content || "";
+    document.getElementById("imageCaption").value = article.imageCaption || "";
+    const authorDisplay = document.getElementById("authorDisplay");
+    if (authorDisplay) authorDisplay.value = article.author || authorDisplay.value;
+    if (publishMessage) {
+      publishMessage.className = "mt-3 mb-0 small text-info";
+      publishMessage.textContent = `Editing: ${article.title || slug}`;
+    }
+  } catch (error) {
+    if (publishMessage) {
+      publishMessage.className = "mt-3 mb-0 small text-danger";
+      publishMessage.textContent = `Unable to load article for editing: ${error.message}`;
+    }
   }
 }
 
 document.getElementById("logoutBtn")?.addEventListener("click", async () => { await signOut(auth); window.location.href = "/admin/login.html"; });
 document.querySelectorAll("[data-format]").forEach((button) => button.addEventListener("click", () => applyEditorFormat(button.dataset.format)));
+
+const contentField = document.getElementById("content");
+contentField?.addEventListener("keydown", (event) => {
+  if (!(event.ctrlKey || event.metaKey)) return;
+  const key = event.key.toLowerCase();
+  if (key === "b") {
+    event.preventDefault();
+    applyEditorFormat("bold");
+  }
+  if (key === "i") {
+    event.preventDefault();
+    applyEditorFormat("italic");
+  }
+});
 
 document.getElementById("previewBtn")?.addEventListener("click", () => {
   const title = document.getElementById("title").value.trim();
@@ -142,15 +199,17 @@ form?.addEventListener("submit", async (event) => {
     content: document.getElementById("content").value.trim(),
     status: "published"
   };
-  article.slug = slugify(article.title);
+  article.slug = editingArticleSlug || slugify(article.title);
 
   try {
-    article.imageUrl = await uploadSelectedImageToCloudinary(article.slug);
-    await setDoc(doc(db, "articles", article.slug), { ...article, publishedAt: serverTimestamp(), updatedAt: serverTimestamp() }, { merge: true });
+    const uploadedImageUrl = await uploadSelectedImageToCloudinary(article.slug);
+    if (uploadedImageUrl) article.imageUrl = uploadedImageUrl;
+    const targetDocId = editingArticleSlug || article.slug;
+    await setDoc(doc(db, "articles", targetDocId), { ...article, slug: targetDocId, publishedAt: serverTimestamp(), updatedAt: serverTimestamp() }, { merge: true });
 
     const notice = document.createElement("div");
     notice.className = "alert alert-success";
-    notice.textContent = "Article published successfully. Redirecting to dashboard...";
+    notice.textContent = editingArticleSlug ? "Article updated successfully. Redirecting to dashboard..." : "Article published successfully. Redirecting to dashboard...";
     publishMessage.replaceChildren(notice);
 
     setTimeout(() => {

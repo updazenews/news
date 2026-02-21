@@ -43,7 +43,7 @@
       <section class="col-12 col-lg-9 col-xl-10">
         <div id="guardMessage" class="alert alert-warning d-none" role="alert"></div>
         <section class="card admin-panel p-4 mb-4">
-          <h2 class="h5">Publish Article</h2>
+          <h2 id="publishFormTitle" class="h5">Publish Article</h2>
           <p class="text-muted">Publish to Firestore and show on your hosted site via <code>article.html?slug=[slug]</code>. Images upload to Cloudinary.</p>
           <form id="publishForm" class="row g-3">
             <div class="col-md-8"><label class="form-label" for="title">Title</label><input class="form-control" id="title" required /></div>
@@ -57,11 +57,13 @@
               <div class="editor-toolbar mb-2" role="toolbar" aria-label="Formatting toolbar">
                 <button type="button" class="btn btn-sm btn-outline-secondary" data-format="bold"><strong>B</strong></button>
                 <button type="button" class="btn btn-sm btn-outline-secondary" data-format="italic"><em>I</em></button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-format="h2">H2</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-format="h3">H3</button>
                 <button type="button" class="btn btn-sm btn-outline-secondary" data-format="bullet">• List</button>
                 <button type="button" class="btn btn-sm btn-outline-secondary" data-format="number">1. List</button>
               </div>
               <textarea id="content" class="form-control" rows="10" required></textarea>
-              <div class="form-text">Formatting supported: **bold**, *italic*, bullet list (- item), numbered list (1. item).</div>
+              <div class="form-text">Formatting supported: **bold** (Ctrl/Cmd+B), *italic* (Ctrl/Cmd+I), H2 (## Heading), H3 (### Subtitle), bullet list (- item), numbered list (1. item).</div>
             </div>
             <div class="col-12 d-flex gap-2"><button class="btn btn-primary" type="submit">Publish</button><button id="previewBtn" class="btn btn-outline-secondary" type="button">Preview</button></div>
           </form>
