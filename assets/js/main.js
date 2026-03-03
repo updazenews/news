@@ -18,21 +18,86 @@ function formatInlineMarkdown(text = "") {
   return text.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/\*(.+?)\*/g, "<em>$1</em>");
 }
 
+function splitTableRow(row = "") {
+  return row.trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map((col) => col.trim());
+}
+
+function isTableDividerRow(row = "") {
+  const cols = splitTableRow(row);
+  if (!cols.length) return false;
+  return cols.every((col) => /^:?-{3,}:?$/.test(col));
+}
+
+function getTableAlignments(dividerRow = "") {
+  return splitTableRow(dividerRow).map((col) => {
+    const left = col.startsWith(":");
+    const right = col.endsWith(":");
+    if (left && right) return "center";
+    if (right) return "right";
+    if (left) return "left";
+    return "left";
+  });
+}
+
+function renderMarkdownTableBlock(lines = []) {
+  if (lines.length < 2 || !isTableDividerRow(lines[1])) return "";
+  const headers = splitTableRow(lines[0]);
+  const alignments = getTableAlignments(lines[1]);
+  const bodyRows = lines.slice(2).map((row) => splitTableRow(row));
+
+  const thead = `<thead><tr>${headers.map((cell, idx) => `<th style=\"text-align:${alignments[idx] || "left"}\">${formatInlineMarkdown(escapeHtml(cell))}</th>`).join("")}</tr></thead>`;
+  const tbody = bodyRows.length ? `<tbody>${bodyRows.map((cells) => `<tr>${headers.map((_, idx) => `<td style=\"text-align:${alignments[idx] || "left"}\">${formatInlineMarkdown(escapeHtml(cells[idx] || ""))}</td>`).join("")}</tr>`).join("")}</tbody>` : "";
+
+  return `<div class=\"table-responsive my-3\"><table class=\"table table-sm table-bordered article-inline-table\">${thead}${tbody}</table></div>`;
+}
+
 function renderFormattedContent(rawContent = "") {
   const lines = rawContent.split("\n");
-  let html = ""; let inUl = false; let inOl = false;
-  const closeLists = () => { if (inUl) { html += "</ul>"; inUl = false; } if (inOl) { html += "</ol>"; inOl = false; } };
-  lines.forEach((line) => {
+  let html = "";
+  let inUl = false;
+  let inOl = false;
+
+  const closeLists = () => {
+    if (inUl) { html += "</ul>"; inUl = false; }
+    if (inOl) { html += "</ol>"; inOl = false; }
+  };
+
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i];
     const trimmed = line.trim();
-    if (!trimmed) { closeLists(); return; }
-    if (/^###\s+/.test(trimmed)) { closeLists(); html += `<h3>${formatInlineMarkdown(escapeHtml(trimmed.replace(/^###\s+/, "")))}</h3>`; return; }
-    if (/^##\s+/.test(trimmed)) { closeLists(); html += `<h2>${formatInlineMarkdown(escapeHtml(trimmed.replace(/^##\s+/, "")))}</h2>`; return; }
-    if (/^[-*]\s+/.test(trimmed)) { if (inOl) { html += "</ol>"; inOl = false; } if (!inUl) { html += "<ul>"; inUl = true; } html += `<li>${formatInlineMarkdown(escapeHtml(trimmed.replace(/^[-*]\s+/, "")))}</li>`; return; }
-    if (/^\d+\.\s+/.test(trimmed)) { if (inUl) { html += "</ul>"; inUl = false; } if (!inOl) { html += "<ol>"; inOl = true; } html += `<li>${formatInlineMarkdown(escapeHtml(trimmed.replace(/^\d+\.\s+/, "")))}</li>`; return; }
-    closeLists(); html += `<p>${formatInlineMarkdown(escapeHtml(trimmed))}</p>`;
-  });
-  closeLists(); return html;
+
+    if (!trimmed) {
+      closeLists();
+      continue;
+    }
+
+    if (trimmed.includes("|") && i + 1 < lines.length && isTableDividerRow(lines[i + 1])) {
+      closeLists();
+      const tableLines = [line, lines[i + 1]];
+      i += 2;
+      while (i < lines.length && lines[i].trim().includes("|")) {
+        tableLines.push(lines[i]);
+        i += 1;
+      }
+      i -= 1;
+      const tableHtml = renderMarkdownTableBlock(tableLines);
+      if (tableHtml) html += tableHtml;
+      continue;
+    }
+
+    if (/^###\s+/.test(trimmed)) { closeLists(); html += `<h3>${formatInlineMarkdown(escapeHtml(trimmed.replace(/^###\s+/, "")))}</h3>`; continue; }
+    if (/^##\s+/.test(trimmed)) { closeLists(); html += `<h2>${formatInlineMarkdown(escapeHtml(trimmed.replace(/^##\s+/, "")))}</h2>`; continue; }
+    if (/^[-*]\s+/.test(trimmed)) { if (inOl) { html += "</ol>"; inOl = false; } if (!inUl) { html += "<ul>"; inUl = true; } html += `<li>${formatInlineMarkdown(escapeHtml(trimmed.replace(/^[-*]\s+/, "")))}</li>`; continue; }
+    if (/^\d+\.\s+/.test(trimmed)) { if (inUl) { html += "</ul>"; inUl = false; } if (!inOl) { html += "<ol>"; inOl = true; } html += `<li>${formatInlineMarkdown(escapeHtml(trimmed.replace(/^\d+\.\s+/, "")))}</li>`; continue; }
+
+    closeLists();
+    html += `<p>${formatInlineMarkdown(escapeHtml(trimmed))}</p>`;
+  }
+
+  closeLists();
+  return html;
 }
+
 
 function upsertMeta(attr, key, content) {
   const selector = attr === "name" ? `meta[name='${key}']` : `meta[property='${key}']`;

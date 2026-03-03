@@ -213,3 +213,14 @@ body {
 #topStoryCarousel .carousel-control-next {
   width: 8%;
 }
+
+
+.article-inline-table th,
+.article-inline-table td {
+  background: #fff;
+  vertical-align: top;
+}
+
+.editor-preview .article-inline-table {
+  margin-bottom: 0;
+}
