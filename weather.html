@@ -47,7 +47,35 @@
             <li class="nav-item"><a class="nav-link" href="index.html">Home</a></li>
             <li class="nav-item"><a class="nav-link" href="category.html?category=breaking-news">Breaking News</a></li>
             <li class="nav-item"><a class="nav-link active" href="weather.html">Weather</a></li>
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Categories</a>
+              <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="category.html?category=technology">Technology</a></li>
+                <li><a class="dropdown-item" href="category.html?category=politics">Politics</a></li>
+                <li><a class="dropdown-item" href="category.html?category=business">Business</a></li>
+                <li><a class="dropdown-item" href="category.html?category=finance">Finance</a></li>
+                <li><a class="dropdown-item" href="category.html?category=sports">Sports</a></li>
+                <li><a class="dropdown-item" href="category.html?category=entertainment">Entertainment</a></li>
+                <li><a class="dropdown-item" href="category.html?category=health">Health</a></li>
+                <li><a class="dropdown-item" href="category.html?category=world">World</a></li>
+              </ul>
+            </li>
+            <li class="nav-item"><a class="nav-link" href="#contact">Contact</a></li>
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">More</a>
+              <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="category.html?category=opinion">Opinion</a></li>
+                <li><a class="dropdown-item" href="category.html?category=editorials">Editorials</a></li>
+                <li><a class="dropdown-item" href="category.html?category=interviews">Interviews</a></li>
+                <li><a class="dropdown-item" href="category.html?category=podcasts">Podcasts</a></li>
+              </ul>
+            </li>
           </ul>
+          <form class="d-flex gap-2" role="search">
+            <input id="siteSearchInput" class="form-control" type="search" placeholder="Search headlines" aria-label="Search" />
+            <button class="btn btn-outline-secondary" type="submit">Search</button>
+            <button class="btn btn-primary" type="button">Subscribe</button>
+          </form>
         </div>
       </div>
     </nav>
@@ -100,16 +128,6 @@
         </div>
 
         <div id="dailyForecastCards" class="weather-daily-cards mt-3"></div>
-      </section>
-
-      <section class="weather-glass card p-3 mt-4">
-        <h2 class="h6 mb-2">Sponsored</h2>
-        <ins class="adsbygoogle"
-          style="display:block"
-          data-ad-client="ca-pub-5731928992880799"
-          data-ad-slot="1234567890"
-          data-ad-format="auto"
-          data-full-width-responsive="true"></ins>
       </section>
     </section>
   </main>
