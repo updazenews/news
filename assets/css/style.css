@@ -224,3 +224,29 @@ body {
 .editor-preview .article-inline-table {
   margin-bottom: 0;
 }
+
+.weather-search-wrap {
+  max-width: 840px;
+  border: 0;
+  border-radius: 1rem;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+}
+
+.weather-search-box {
+  width: min(100%, 620px);
+}
+
+.weather-suggestions {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.weather-day-card {
+  border-radius: 0.85rem;
+  border: 1px solid #dbe2ea;
+}
