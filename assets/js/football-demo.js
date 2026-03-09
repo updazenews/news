@@ -2,8 +2,7 @@ import { auth } from "./firebase-config.js";
 import { canManageUsers, guardAdminRoute, isSuperAdmin, logAdminEvent } from "./auth.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-const FOOTBALL_DATA_TOKEN = "fbf603093fd941cd80dabc3e285b3151";
-const API_BASE = "https://api.football-data.org/v4";
+const API_BASE = "https://api.openligadb.de";
 
 const guardMessage = document.getElementById("guardMessage");
 const statusText = document.getElementById("footballStatus");
@@ -15,73 +14,39 @@ const manageUsersLink = document.getElementById("manageUsersLink");
 const adminLogsLink = document.getElementById("adminLogsLink");
 const footballDemoLink = document.getElementById("footballDemoLink");
 
-const mockPayload = {
-  wc: { competition: { name: "FIFA World Cup", code: "WC", type: "CUP", plan: "DEMO" } },
-  cl: { competition: { name: "UEFA Champions League", code: "CL", type: "CUP", plan: "DEMO" } },
-  matches: {
-    matches: [
-      { status: "SCHEDULED", utcDate: new Date(Date.now() + 86400000).toISOString(), homeTeam: { name: "Real Madrid" }, awayTeam: { name: "Manchester City" }, matchday: 1 },
-      { status: "SCHEDULED", utcDate: new Date(Date.now() + 172800000).toISOString(), homeTeam: { name: "Bayern Munich" }, awayTeam: { name: "Inter" }, matchday: 1 },
-      { status: "FINISHED", utcDate: new Date(Date.now() - 86400000).toISOString(), homeTeam: { name: "PSG" }, awayTeam: { name: "Arsenal" }, matchday: 6, score: { fullTime: { home: 2, away: 1 } } },
-      { status: "FINISHED", utcDate: new Date(Date.now() - 172800000).toISOString(), homeTeam: { name: "Barcelona" }, awayTeam: { name: "Dortmund" }, matchday: 6, score: { fullTime: { home: 3, away: 2 } } }
-    ]
-  }
-};
+const fallbackMatches = [
+  { matchDateTimeUTC: new Date(Date.now() + 86400000).toISOString(), team1: { teamName: "Real Madrid" }, team2: { teamName: "Manchester City" }, matchIsFinished: false, group: { groupOrderID: 1, groupName: "Matchday 1" }, matchResults: [] },
+  { matchDateTimeUTC: new Date(Date.now() + 172800000).toISOString(), team1: { teamName: "Bayern Munich" }, team2: { teamName: "Inter" }, matchIsFinished: false, group: { groupOrderID: 1, groupName: "Matchday 1" }, matchResults: [] },
+  { matchDateTimeUTC: new Date(Date.now() - 86400000).toISOString(), team1: { teamName: "PSG" }, team2: { teamName: "Arsenal" }, matchIsFinished: true, group: { groupOrderID: 6, groupName: "Matchday 6" }, matchResults: [{ resultTypeID: 2, pointsTeam1: 2, pointsTeam2: 1 }] },
+  { matchDateTimeUTC: new Date(Date.now() - 172800000).toISOString(), team1: { teamName: "Barcelona" }, team2: { teamName: "Dortmund" }, matchIsFinished: true, group: { groupOrderID: 6, groupName: "Matchday 6" }, matchResults: [{ resultTypeID: 2, pointsTeam1: 3, pointsTeam2: 2 }] }
+];
 
 function escapeHtml(value = "") {
   const map = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" };
   return String(value).replace(/[&<>"']/g, (char) => map[char]);
 }
 
-function buildProxyCandidates(url, withTokenQuery = false) {
-  const targetUrl = withTokenQuery
-    ? `${url}${url.includes("?") ? "&" : "?"}X-Auth-Token=${encodeURIComponent(FOOTBALL_DATA_TOKEN)}`
-    : url;
-
-  const encoded = encodeURIComponent(targetUrl);
-  const customProxy = (window.FOOTBALL_PROXY_URL || "").trim();
-
-  const candidates = [
-    { url: targetUrl, headers: { "X-Auth-Token": FOOTBALL_DATA_TOKEN }, label: "direct" },
-    { url: `https://corsproxy.io/?${encoded}`, headers: { "X-Auth-Token": FOOTBALL_DATA_TOKEN }, label: "corsproxy-header" },
-    { url: `https://corsproxy.io/?${encoded}`, headers: {}, label: "corsproxy-query" }
-  ];
-
-  if (customProxy) {
-    const normalized = customProxy.endsWith("/") ? customProxy : `${customProxy}/`;
-    candidates.unshift({ url: `${normalized}${encoded}`, headers: { "X-Auth-Token": FOOTBALL_DATA_TOKEN }, label: "custom-proxy-header" });
-    candidates.unshift({ url: `${normalized}${encoded}`, headers: {}, label: "custom-proxy-query" });
-  }
-
-  return candidates;
+async function fetchOpenLiga(path) {
+  const response = await fetch(`${API_BASE}${path}`, { method: "GET", mode: "cors" });
+  if (!response.ok) throw new Error(`OpenLigaDB HTTP ${response.status} for ${path}`);
+  return response.json();
 }
 
-async function fetchFootball(path) {
-  const url = `${API_BASE}${path}`;
-  const attempts = [
-    ...buildProxyCandidates(url, false),
-    ...buildProxyCandidates(url, true)
-  ];
-
-  let lastError = "Unknown network error";
-
-  for (const attempt of attempts) {
+async function firstSuccessful(candidates = []) {
+  let lastError = "No candidate endpoint available";
+  for (const candidate of candidates) {
     try {
-      const response = await fetch(attempt.url, {
-        method: "GET",
-        headers: attempt.headers,
-        mode: "cors"
-      });
-      if (!response.ok) {
-        lastError = `${attempt.label}: HTTP ${response.status}`;
+      const data = await fetchOpenLiga(candidate.path);
+      if (Array.isArray(data) && data.length) return { data, candidate };
+      if (Array.isArray(data) && !data.length) {
+        lastError = `${candidate.path}: empty result`;
         continue;
       }
-      return await response.json();
+      return { data, candidate };
     } catch (error) {
-      lastError = `${attempt.label}: ${error.message}`;
+      lastError = `${candidate.path}: ${error.message}`;
     }
   }
-
   throw new Error(lastError);
 }
 
@@ -90,26 +55,53 @@ function formatDate(iso) {
   return new Date(iso).toLocaleString();
 }
 
-function renderCompetitions(wcData, clData) {
-  const items = [wcData?.competition, clData?.competition].filter(Boolean);
-  if (!items.length) {
-    competitionCards.innerHTML = '<div class="col-12 text-muted">No competition data available.</div>';
-    return;
-  }
-
-  competitionCards.innerHTML = items.map((comp) => `
+function competitionCard({ title, sourcePath, count, note }) {
+  return `
     <div class="col-12 col-md-6">
       <article class="border rounded p-3 h-100">
-        <h4 class="h6 mb-1">${escapeHtml(comp.name || "Competition")}</h4>
-        <p class="small mb-1 text-muted">Code: ${escapeHtml(comp.code || "-")}</p>
-        <p class="small mb-0 text-muted">Type: ${escapeHtml(comp.type || "-")} • Plan: ${escapeHtml(comp.plan || "-")}</p>
+        <h4 class="h6 mb-1">${escapeHtml(title)}</h4>
+        <p class="small mb-1 text-muted">Source: OpenLigaDB</p>
+        <p class="small mb-1 text-muted">Endpoint: <code>${escapeHtml(sourcePath || "demo fallback")}</code></p>
+        <p class="small mb-0 text-muted">Items: ${escapeHtml(String(count ?? 0))}${note ? ` • ${escapeHtml(note)}` : ""}</p>
       </article>
     </div>
-  `).join("");
+  `;
+}
+
+function renderCompetitions(info) {
+  competitionCards.innerHTML = [
+    competitionCard({
+      title: "FIFA World Cup",
+      sourcePath: info?.wcPath,
+      count: info?.wcCount ?? 0,
+      note: info?.wcFallback ? "Demo fallback" : "Live"
+    }),
+    competitionCard({
+      title: "UEFA Champions League",
+      sourcePath: info?.clPath,
+      count: info?.clCount ?? 0,
+      note: info?.clFallback ? "Demo fallback" : "Live"
+    })
+  ].join("");
+}
+
+function matchStatus(match) {
+  return match?.matchIsFinished ? "FINISHED" : "SCHEDULED";
+}
+
+function matchday(match) {
+  return match?.group?.groupOrderID || match?.group?.groupName || "-";
+}
+
+function extractScore(match) {
+  const results = Array.isArray(match?.matchResults) ? match.matchResults : [];
+  const fullTime = results.find((r) => Number(r.resultTypeID) === 2) || results[results.length - 1];
+  if (!fullTime) return "- - -";
+  return `${fullTime.pointsTeam1 ?? "-"} - ${fullTime.pointsTeam2 ?? "-"}`;
 }
 
 function renderFixtures(matches = []) {
-  const upcoming = matches.filter((m) => m.status === "SCHEDULED" || m.status === "TIMED").slice(0, 10);
+  const upcoming = matches.filter((m) => !m.matchIsFinished).slice(0, 10);
   if (!upcoming.length) {
     fixturesBody.innerHTML = '<tr><td colspan="5" class="text-muted">No upcoming fixtures found.</td></tr>';
     return;
@@ -117,53 +109,66 @@ function renderFixtures(matches = []) {
 
   fixturesBody.innerHTML = upcoming.map((m) => `
     <tr>
-      <td>${escapeHtml(formatDate(m.utcDate))}</td>
-      <td>${escapeHtml(m.homeTeam?.name || "-")}</td>
-      <td>${escapeHtml(m.awayTeam?.name || "-")}</td>
-      <td>${escapeHtml(m.status || "-")}</td>
-      <td>${escapeHtml(m.matchday ?? "-")}</td>
+      <td>${escapeHtml(formatDate(m.matchDateTimeUTC || m.matchDateTime))}</td>
+      <td>${escapeHtml(m.team1?.teamName || "-")}</td>
+      <td>${escapeHtml(m.team2?.teamName || "-")}</td>
+      <td>${escapeHtml(matchStatus(m))}</td>
+      <td>${escapeHtml(String(matchday(m)))}</td>
     </tr>
   `).join("");
 }
 
 function renderResults(matches = []) {
-  const played = matches.filter((m) => m.status === "FINISHED").slice(0, 10);
+  const played = matches.filter((m) => m.matchIsFinished).slice(0, 10);
   if (!played.length) {
     resultsBody.innerHTML = '<tr><td colspan="5" class="text-muted">No recent match data found.</td></tr>';
     return;
   }
 
-  resultsBody.innerHTML = played.map((m) => {
-    const home = m.score?.fullTime?.home ?? "-";
-    const away = m.score?.fullTime?.away ?? "-";
-    return `
-      <tr>
-        <td>${escapeHtml(formatDate(m.utcDate))}</td>
-        <td>${escapeHtml(m.homeTeam?.name || "-")}</td>
-        <td>${escapeHtml(m.awayTeam?.name || "-")}</td>
-        <td>${escapeHtml(`${home} - ${away}`)}</td>
-        <td>${escapeHtml(m.status || "-")}</td>
-      </tr>
-    `;
-  }).join("");
+  resultsBody.innerHTML = played.map((m) => `
+    <tr>
+      <td>${escapeHtml(formatDate(m.matchDateTimeUTC || m.matchDateTime))}</td>
+      <td>${escapeHtml(m.team1?.teamName || "-")}</td>
+      <td>${escapeHtml(m.team2?.teamName || "-")}</td>
+      <td>${escapeHtml(extractScore(m))}</td>
+      <td>${escapeHtml(matchStatus(m))}</td>
+    </tr>
+  `).join("");
 }
 
 async function loadFootballDemo(authInfo) {
-  statusText.textContent = "Loading FIFA World Cup and UEFA Champions League data...";
+  statusText.textContent = "Loading FIFA World Cup and UEFA Champions League data from OpenLigaDB...";
 
   try {
-    const [wcData, clData, clMatchesData] = await Promise.all([
-      fetchFootball("/competitions/WC"),
-      fetchFootball("/competitions/CL"),
-      fetchFootball("/competitions/CL/matches")
+    const year = new Date().getFullYear();
+
+    const wcCandidates = [
+      { path: `/getmatchdata/wm/${year}` },
+      { path: "/getmatchdata/wm" },
+      { path: "/getmatchdata/fifa-wm" },
+      { path: "/getmatchdata" }
+    ];
+
+    const clCandidates = [
+      { path: `/getmatchdata/championsleague/${year}` },
+      { path: "/getmatchdata/championsleague" },
+      { path: "/getmatchdata/uefa-champions-league" },
+      { path: "/getmatchdata" }
+    ];
+
+    const [wcResolved, clResolved] = await Promise.all([
+      firstSuccessful(wcCandidates),
+      firstSuccessful(clCandidates)
     ]);
 
-    renderCompetitions(wcData, clData);
-    const matches = Array.isArray(clMatchesData?.matches) ? clMatchesData.matches : [];
-    renderFixtures(matches);
-    renderResults(matches);
+    const wcMatches = Array.isArray(wcResolved.data) ? wcResolved.data : [];
+    const clMatches = Array.isArray(clResolved.data) ? clResolved.data : [];
 
-    statusText.textContent = `Loaded ${matches.length} Champions League matches.`;
+    renderCompetitions({ wcPath: wcResolved.candidate.path, clPath: clResolved.candidate.path, wcCount: wcMatches.length, clCount: clMatches.length, wcFallback: false, clFallback: false });
+    renderFixtures(clMatches);
+    renderResults(clMatches);
+
+    statusText.textContent = `Loaded OpenLigaDB data (WC: ${wcMatches.length}, UCL: ${clMatches.length}).`;
 
     await logAdminEvent({
       eventType: "football_demo_viewed",
@@ -171,13 +176,13 @@ async function loadFootballDemo(authInfo) {
       email: authInfo.user.email || "",
       uid: authInfo.user.uid,
       role: authInfo.role,
-      details: "Viewed football demo with FIFA World Cup and UCL data"
+      details: "Viewed football demo using OpenLigaDB"
     });
   } catch (error) {
-    renderCompetitions(mockPayload.wc, mockPayload.cl);
-    renderFixtures(mockPayload.matches.matches);
-    renderResults(mockPayload.matches.matches);
-    statusText.textContent = `Live API blocked by CORS/network (${error.message}). Showing demo fallback data. Set window.FOOTBALL_PROXY_URL to your server-side proxy to enable live data in production.`;
+    renderCompetitions({ wcPath: "demo fallback", clPath: "demo fallback", wcCount: fallbackMatches.length, clCount: fallbackMatches.length, wcFallback: true, clFallback: true });
+    renderFixtures(fallbackMatches);
+    renderResults(fallbackMatches);
+    statusText.textContent = `OpenLigaDB live fetch failed (${error.message}). Showing demo fallback match data.`;
   }
 }
 
