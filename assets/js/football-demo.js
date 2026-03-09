@@ -15,17 +15,74 @@ const manageUsersLink = document.getElementById("manageUsersLink");
 const adminLogsLink = document.getElementById("adminLogsLink");
 const footballDemoLink = document.getElementById("footballDemoLink");
 
+const mockPayload = {
+  wc: { competition: { name: "FIFA World Cup", code: "WC", type: "CUP", plan: "DEMO" } },
+  cl: { competition: { name: "UEFA Champions League", code: "CL", type: "CUP", plan: "DEMO" } },
+  matches: {
+    matches: [
+      { status: "SCHEDULED", utcDate: new Date(Date.now() + 86400000).toISOString(), homeTeam: { name: "Real Madrid" }, awayTeam: { name: "Manchester City" }, matchday: 1 },
+      { status: "SCHEDULED", utcDate: new Date(Date.now() + 172800000).toISOString(), homeTeam: { name: "Bayern Munich" }, awayTeam: { name: "Inter" }, matchday: 1 },
+      { status: "FINISHED", utcDate: new Date(Date.now() - 86400000).toISOString(), homeTeam: { name: "PSG" }, awayTeam: { name: "Arsenal" }, matchday: 6, score: { fullTime: { home: 2, away: 1 } } },
+      { status: "FINISHED", utcDate: new Date(Date.now() - 172800000).toISOString(), homeTeam: { name: "Barcelona" }, awayTeam: { name: "Dortmund" }, matchday: 6, score: { fullTime: { home: 3, away: 2 } } }
+    ]
+  }
+};
+
 function escapeHtml(value = "") {
   const map = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" };
   return String(value).replace(/[&<>"']/g, (char) => map[char]);
 }
 
+function buildProxyCandidates(url, withTokenQuery = false) {
+  const targetUrl = withTokenQuery
+    ? `${url}${url.includes("?") ? "&" : "?"}X-Auth-Token=${encodeURIComponent(FOOTBALL_DATA_TOKEN)}`
+    : url;
+
+  const encoded = encodeURIComponent(targetUrl);
+  const customProxy = (window.FOOTBALL_PROXY_URL || "").trim();
+
+  const candidates = [
+    { url: targetUrl, headers: { "X-Auth-Token": FOOTBALL_DATA_TOKEN }, label: "direct" },
+    { url: `https://corsproxy.io/?${encoded}`, headers: { "X-Auth-Token": FOOTBALL_DATA_TOKEN }, label: "corsproxy-header" },
+    { url: `https://corsproxy.io/?${encoded}`, headers: {}, label: "corsproxy-query" }
+  ];
+
+  if (customProxy) {
+    const normalized = customProxy.endsWith("/") ? customProxy : `${customProxy}/`;
+    candidates.unshift({ url: `${normalized}${encoded}`, headers: { "X-Auth-Token": FOOTBALL_DATA_TOKEN }, label: "custom-proxy-header" });
+    candidates.unshift({ url: `${normalized}${encoded}`, headers: {}, label: "custom-proxy-query" });
+  }
+
+  return candidates;
+}
+
 async function fetchFootball(path) {
-  const response = await fetch(`${API_BASE}${path}`, {
-    headers: { "X-Auth-Token": FOOTBALL_DATA_TOKEN }
-  });
-  if (!response.ok) throw new Error(`Football API failed (${response.status})`);
-  return response.json();
+  const url = `${API_BASE}${path}`;
+  const attempts = [
+    ...buildProxyCandidates(url, false),
+    ...buildProxyCandidates(url, true)
+  ];
+
+  let lastError = "Unknown network error";
+
+  for (const attempt of attempts) {
+    try {
+      const response = await fetch(attempt.url, {
+        method: "GET",
+        headers: attempt.headers,
+        mode: "cors"
+      });
+      if (!response.ok) {
+        lastError = `${attempt.label}: HTTP ${response.status}`;
+        continue;
+      }
+      return await response.json();
+    } catch (error) {
+      lastError = `${attempt.label}: ${error.message}`;
+    }
+  }
+
+  throw new Error(lastError);
 }
 
 function formatDate(iso) {
@@ -117,9 +174,10 @@ async function loadFootballDemo(authInfo) {
       details: "Viewed football demo with FIFA World Cup and UCL data"
     });
   } catch (error) {
-    statusText.textContent = `Unable to load football data: ${error.message}`;
-    fixturesBody.innerHTML = '<tr><td colspan="5" class="text-danger">Failed to load fixtures.</td></tr>';
-    resultsBody.innerHTML = '<tr><td colspan="5" class="text-danger">Failed to load match data.</td></tr>';
+    renderCompetitions(mockPayload.wc, mockPayload.cl);
+    renderFixtures(mockPayload.matches.matches);
+    renderResults(mockPayload.matches.matches);
+    statusText.textContent = `Live API blocked by CORS/network (${error.message}). Showing demo fallback data. Set window.FOOTBALL_PROXY_URL to your server-side proxy to enable live data in production.`;
   }
 }
 
