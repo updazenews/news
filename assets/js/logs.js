@@ -8,6 +8,7 @@ const guardMessage = document.getElementById("guardMessage");
 const adminUserLabel = document.getElementById("adminUserLabel");
 const manageUsersLink = document.getElementById("manageUsersLink");
 const adminLogsLink = document.getElementById("adminLogsLink");
+const footballDemoLink = document.getElementById("footballDemoLink");
 const adminLogsBody = document.getElementById("adminLogsBody");
 const adminLogsStatus = document.getElementById("adminLogsStatus");
 
@@ -18,6 +19,7 @@ if (!authInfo || !isSuperAdmin(authInfo.role)) {
   adminUserLabel.textContent = `${authInfo.profile.displayName || authInfo.user.email} (${authInfo.role})`;
   if (canManageUsers(authInfo.role)) manageUsersLink?.classList.remove("d-none");
   adminLogsLink?.classList.remove("d-none");
+  footballDemoLink?.classList.remove("d-none");
   await loadLogs();
   await logAdminEvent({
     eventType: "super_admin_logs_view",

@@ -15,6 +15,7 @@ const addUserMessage = document.getElementById("addUserMessage");
 const addUserBtn = document.getElementById("addUserBtn");
 const newUserRole = document.getElementById("newUserRole");
 const adminLogsLink = document.getElementById("adminLogsLink");
+const footballDemoLink = document.getElementById("footballDemoLink");
 
 if (!authInfo || !canManageUsers(authInfo.role)) {
   guardMessage?.classList.remove("d-none");
@@ -22,6 +23,7 @@ if (!authInfo || !canManageUsers(authInfo.role)) {
 } else {
   label.textContent = `${authInfo.profile.displayName || authInfo.user.email} (${authInfo.role})`;
   if (isSuperAdmin(authInfo.role)) adminLogsLink?.classList.remove("d-none");
+  if (isSuperAdmin(authInfo.role)) footballDemoLink?.classList.remove("d-none");
   if (!isSuperAdmin(authInfo.role)) {
     const superAdminOption = [...newUserRole.options].find((option) => option.value === "super admin");
     superAdminOption?.remove();

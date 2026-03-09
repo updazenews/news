@@ -8,6 +8,7 @@ const guardMessage = document.getElementById("guardMessage");
 const label = document.getElementById("adminUserLabel");
 const manageUsersLink = document.getElementById("manageUsersLink");
 const adminLogsLink = document.getElementById("adminLogsLink");
+const footballDemoLink = document.getElementById("footballDemoLink");
 const form = document.getElementById("accountForm");
 const msg = document.getElementById("accountMessage");
 const saveProfileBtn = document.getElementById("saveProfileBtn");
@@ -19,6 +20,7 @@ if (!authInfo) {
   label.textContent = `${authInfo.profile.displayName || authInfo.user.email} (${authInfo.role})`;
   if (canManageUsers(authInfo.role)) manageUsersLink?.classList.remove("d-none");
   if (isSuperAdmin(authInfo.role)) adminLogsLink?.classList.remove("d-none");
+  if (isSuperAdmin(authInfo.role)) footballDemoLink?.classList.remove("d-none");
   document.getElementById("displayName").value = authInfo.profile.displayName || "";
   document.getElementById("cellphone").value = authInfo.profile.cellphone || "";
 }

@@ -30,6 +30,7 @@ const publishedArticlesBody = document.getElementById("publishedArticlesBody");
 const publishedArticlesStatus = document.getElementById("publishedArticlesStatus");
 const manageUsersLink = document.getElementById("manageUsersLink");
 const adminLogsLink = document.getElementById("adminLogsLink");
+const footballDemoLink = document.getElementById("footballDemoLink");
 const dashboardAnalyticsStatus = document.getElementById("dashboardAnalyticsStatus");
 const analyticsTotalArticles = document.getElementById("analyticsTotalArticles");
 const analyticsTotalViews = document.getElementById("analyticsTotalViews");
@@ -480,6 +481,7 @@ if (!authInfo) {
 
   if (manageUsersLink && canManageUsers(authInfo.role)) manageUsersLink.classList.remove("d-none");
   if (adminLogsLink && isSuperAdmin(authInfo.role)) adminLogsLink.classList.remove("d-none");
+  if (footballDemoLink && isSuperAdmin(authInfo.role)) footballDemoLink.classList.remove("d-none");
 
   if (form && editSlug) await loadArticleForEditing(editSlug, authInfo);
   if (publishedArticlesBody && publishedArticlesStatus) await loadPublishedArticles(authInfo);
