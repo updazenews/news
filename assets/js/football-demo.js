@@ -7,18 +7,16 @@ const API_BASE = "https://api.openligadb.de";
 const guardMessage = document.getElementById("guardMessage");
 const statusText = document.getElementById("footballStatus");
 const competitionCards = document.getElementById("competitionCards");
-const fixturesBody = document.getElementById("uclFixturesBody");
-const resultsBody = document.getElementById("uclResultsBody");
+const fixturesWrap = document.getElementById("uclFixturesCards");
+const resultsWrap = document.getElementById("uclResultsCards");
 const adminUserLabel = document.getElementById("adminUserLabel");
 const manageUsersLink = document.getElementById("manageUsersLink");
 const adminLogsLink = document.getElementById("adminLogsLink");
 const footballDemoLink = document.getElementById("footballDemoLink");
 
 const fallbackMatches = [
-  { matchDateTimeUTC: new Date(Date.now() + 86400000).toISOString(), team1: { teamName: "Real Madrid" }, team2: { teamName: "Manchester City" }, matchIsFinished: false, group: { groupOrderID: 1, groupName: "Matchday 1" }, matchResults: [] },
-  { matchDateTimeUTC: new Date(Date.now() + 172800000).toISOString(), team1: { teamName: "Bayern Munich" }, team2: { teamName: "Inter" }, matchIsFinished: false, group: { groupOrderID: 1, groupName: "Matchday 1" }, matchResults: [] },
-  { matchDateTimeUTC: new Date(Date.now() - 86400000).toISOString(), team1: { teamName: "PSG" }, team2: { teamName: "Arsenal" }, matchIsFinished: true, group: { groupOrderID: 6, groupName: "Matchday 6" }, matchResults: [{ resultTypeID: 2, pointsTeam1: 2, pointsTeam2: 1 }] },
-  { matchDateTimeUTC: new Date(Date.now() - 172800000).toISOString(), team1: { teamName: "Barcelona" }, team2: { teamName: "Dortmund" }, matchIsFinished: true, group: { groupOrderID: 6, groupName: "Matchday 6" }, matchResults: [{ resultTypeID: 2, pointsTeam1: 3, pointsTeam2: 2 }] }
+  { leagueName: "UEFA Champions League", matchDateTimeUTC: new Date(Date.now() + 86400000).toISOString(), team1: { teamName: "Real Madrid", teamIconUrl: "" }, team2: { teamName: "Manchester City", teamIconUrl: "" }, matchIsFinished: false, group: { groupOrderID: 1, groupName: "Matchday 1" }, matchResults: [], goals: [] },
+  { leagueName: "UEFA Champions League", matchDateTimeUTC: new Date(Date.now() - 86400000).toISOString(), team1: { teamName: "PSG", teamIconUrl: "https://upload.wikimedia.org/wikipedia/en/a/a7/Paris_Saint-Germain_F.C..svg" }, team2: { teamName: "Arsenal", teamIconUrl: "https://upload.wikimedia.org/wikipedia/en/5/53/Arsenal_FC.svg" }, matchIsFinished: true, group: { groupOrderID: 6, groupName: "Matchday 6" }, matchResults: [{ resultTypeID: 2, pointsTeam1: 2, pointsTeam2: 1 }], goals: [{ scoreTeam1: 1, scoreTeam2: 0, goalGetterName: "Hakimi" }, { scoreTeam1: 2, scoreTeam2: 0, goalGetterName: "Ruiz" }, { scoreTeam1: 2, scoreTeam2: 1, goalGetterName: "Saka" }], location: { locationStadium: "Parc des Princes", locationCity: "Paris" } }
 ];
 
 function escapeHtml(value = "") {
@@ -50,9 +48,45 @@ async function firstSuccessful(candidates = []) {
   throw new Error(lastError);
 }
 
+function logoForTeam(team = {}) {
+  if (team.teamIconUrl) return team.teamIconUrl;
+  const label = encodeURIComponent((team.teamName || "Team").slice(0, 2).toUpperCase());
+  return `https://ui-avatars.com/api/?name=${label}&background=0f172a&color=ffffff&size=64`;
+}
+
 function formatDate(iso) {
   if (!iso) return "-";
-  return new Date(iso).toLocaleString();
+  return new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "2-digit" });
+}
+
+function formatDateTime(iso) {
+  if (!iso) return "-";
+  return new Date(iso).toLocaleString(undefined, { weekday: "short", hour: "2-digit", minute: "2-digit" });
+}
+
+function scoreObj(match) {
+  const results = Array.isArray(match?.matchResults) ? match.matchResults : [];
+  const fullTime = results.find((r) => Number(r.resultTypeID) === 2) || results[results.length - 1] || {};
+  return { home: fullTime.pointsTeam1 ?? "-", away: fullTime.pointsTeam2 ?? "-" };
+}
+
+function scorerText(match, homeSide = true) {
+  const goals = Array.isArray(match?.goals) ? match.goals : [];
+  if (!goals.length) return "";
+  const teamGoals = goals.filter((goal) => {
+    const prevHome = Number(goal.scoreTeam1 ?? 0) - Number(goal.scoreTeam2 ?? 0);
+    const before = homeSide ? prevHome > 0 : prevHome < 0;
+    const now = homeSide ? Number(goal.scoreTeam1) > Number(goal.scoreTeam2) : Number(goal.scoreTeam2) > Number(goal.scoreTeam1);
+    return now || before;
+  }).map((goal) => goal.goalGetterName).filter(Boolean);
+  return teamGoals.slice(0, 3).join(", ");
+}
+
+function venueText(match) {
+  const stadium = match?.location?.locationStadium;
+  const city = match?.location?.locationCity;
+  if (stadium && city) return `${stadium}, ${city}`;
+  return stadium || city || "Venue not provided";
 }
 
 function competitionCard({ title, sourcePath, count, note }) {
@@ -70,70 +104,69 @@ function competitionCard({ title, sourcePath, count, note }) {
 
 function renderCompetitions(info) {
   competitionCards.innerHTML = [
-    competitionCard({
-      title: "FIFA World Cup",
-      sourcePath: info?.wcPath,
-      count: info?.wcCount ?? 0,
-      note: info?.wcFallback ? "Demo fallback" : "Live"
-    }),
-    competitionCard({
-      title: "UEFA Champions League",
-      sourcePath: info?.clPath,
-      count: info?.clCount ?? 0,
-      note: info?.clFallback ? "Demo fallback" : "Live"
-    })
+    competitionCard({ title: "FIFA World Cup", sourcePath: info?.wcPath, count: info?.wcCount ?? 0, note: info?.wcFallback ? "Demo fallback" : "Live" }),
+    competitionCard({ title: "UEFA Champions League", sourcePath: info?.clPath, count: info?.clCount ?? 0, note: info?.clFallback ? "Demo fallback" : "Live" })
   ].join("");
 }
 
-function matchStatus(match) {
-  return match?.matchIsFinished ? "FINISHED" : "SCHEDULED";
-}
+function matchCard(match, finished = true) {
+  const score = scoreObj(match);
+  const homeName = match?.team1?.teamName || "Home";
+  const awayName = match?.team2?.teamName || "Away";
+  const league = match?.leagueName || "UEFA Champions League";
+  const dateLabel = formatDate(match.matchDateTimeUTC || match.matchDateTime);
+  const homeScorers = scorerText(match, true);
+  const awayScorers = scorerText(match, false);
 
-function matchday(match) {
-  return match?.group?.groupOrderID || match?.group?.groupName || "-";
-}
-
-function extractScore(match) {
-  const results = Array.isArray(match?.matchResults) ? match.matchResults : [];
-  const fullTime = results.find((r) => Number(r.resultTypeID) === 2) || results[results.length - 1];
-  if (!fullTime) return "- - -";
-  return `${fullTime.pointsTeam1 ?? "-"} - ${fullTime.pointsTeam2 ?? "-"}`;
+  return `
+    <article class="football-match-card">
+      <header class="football-match-head">
+        <strong>${finished ? "Results" : "Fixture"}</strong>
+        <span>›</span>
+      </header>
+      <p class="football-league-name">${escapeHtml(league)}</p>
+      <p class="football-match-date">${escapeHtml(dateLabel)}</p>
+      <div class="football-score-row">
+        <div class="football-team football-team-left">
+          <img src="${escapeHtml(logoForTeam(match.team1 || {}))}" alt="${escapeHtml(homeName)} logo" class="football-team-logo" loading="lazy" />
+          <span class="football-team-name">${escapeHtml(homeName)}</span>
+        </div>
+        <div class="football-center-score">
+          <span class="football-score-number">${escapeHtml(String(score.home))}</span>
+          <span class="football-score-dash">-</span>
+          <span class="football-score-number">${escapeHtml(String(score.away))}</span>
+        </div>
+        <div class="football-team football-team-right">
+          <span class="football-team-name">${escapeHtml(awayName)}</span>
+          <img src="${escapeHtml(logoForTeam(match.team2 || {}))}" alt="${escapeHtml(awayName)} logo" class="football-team-logo" loading="lazy" />
+        </div>
+      </div>
+      <div class="football-goals-row">
+        <span>${escapeHtml(homeScorers || "-")}</span>
+        <span>${finished ? "⚽" : "🗓️"}</span>
+        <span>${escapeHtml(awayScorers || "-")}</span>
+      </div>
+      <p class="football-venue">📍 ${escapeHtml(finished ? venueText(match) : `Kickoff ${formatDateTime(match.matchDateTimeUTC || match.matchDateTime)}`)}</p>
+    </article>
+  `;
 }
 
 function renderFixtures(matches = []) {
-  const upcoming = matches.filter((m) => !m.matchIsFinished).slice(0, 10);
+  const upcoming = matches.filter((m) => !m.matchIsFinished).slice(0, 8);
   if (!upcoming.length) {
-    fixturesBody.innerHTML = '<tr><td colspan="5" class="text-muted">No upcoming fixtures found.</td></tr>';
+    fixturesWrap.innerHTML = '<p class="text-muted mb-0">No upcoming fixtures found.</p>';
     return;
   }
-
-  fixturesBody.innerHTML = upcoming.map((m) => `
-    <tr>
-      <td>${escapeHtml(formatDate(m.matchDateTimeUTC || m.matchDateTime))}</td>
-      <td>${escapeHtml(m.team1?.teamName || "-")}</td>
-      <td>${escapeHtml(m.team2?.teamName || "-")}</td>
-      <td>${escapeHtml(matchStatus(m))}</td>
-      <td>${escapeHtml(String(matchday(m)))}</td>
-    </tr>
-  `).join("");
+  fixturesWrap.innerHTML = upcoming.map((m) => matchCard(m, false)).join("");
 }
 
 function renderResults(matches = []) {
-  const played = matches.filter((m) => m.matchIsFinished).slice(0, 10);
+  const played = matches.filter((m) => m.matchIsFinished).slice(0, 8);
   if (!played.length) {
-    resultsBody.innerHTML = '<tr><td colspan="5" class="text-muted">No recent match data found.</td></tr>';
+    resultsWrap.innerHTML = '<p class="text-muted mb-0">No recent match data found.</p>';
     return;
   }
-
-  resultsBody.innerHTML = played.map((m) => `
-    <tr>
-      <td>${escapeHtml(formatDate(m.matchDateTimeUTC || m.matchDateTime))}</td>
-      <td>${escapeHtml(m.team1?.teamName || "-")}</td>
-      <td>${escapeHtml(m.team2?.teamName || "-")}</td>
-      <td>${escapeHtml(extractScore(m))}</td>
-      <td>${escapeHtml(matchStatus(m))}</td>
-    </tr>
-  `).join("");
+  resultsWrap.innerHTML = played.map((m) => matchCard(m, true)).join("");
 }
 
 async function loadFootballDemo(authInfo) {
@@ -141,26 +174,10 @@ async function loadFootballDemo(authInfo) {
 
   try {
     const year = new Date().getFullYear();
+    const wcCandidates = [{ path: `/getmatchdata/wm/${year}` }, { path: "/getmatchdata/wm" }, { path: "/getmatchdata/fifa-wm" }, { path: "/getmatchdata" }];
+    const clCandidates = [{ path: `/getmatchdata/championsleague/${year}` }, { path: "/getmatchdata/championsleague" }, { path: "/getmatchdata/uefa-champions-league" }, { path: "/getmatchdata" }];
 
-    const wcCandidates = [
-      { path: `/getmatchdata/wm/${year}` },
-      { path: "/getmatchdata/wm" },
-      { path: "/getmatchdata/fifa-wm" },
-      { path: "/getmatchdata" }
-    ];
-
-    const clCandidates = [
-      { path: `/getmatchdata/championsleague/${year}` },
-      { path: "/getmatchdata/championsleague" },
-      { path: "/getmatchdata/uefa-champions-league" },
-      { path: "/getmatchdata" }
-    ];
-
-    const [wcResolved, clResolved] = await Promise.all([
-      firstSuccessful(wcCandidates),
-      firstSuccessful(clCandidates)
-    ]);
-
+    const [wcResolved, clResolved] = await Promise.all([firstSuccessful(wcCandidates), firstSuccessful(clCandidates)]);
     const wcMatches = Array.isArray(wcResolved.data) ? wcResolved.data : [];
     const clMatches = Array.isArray(clResolved.data) ? clResolved.data : [];
 
@@ -169,15 +186,7 @@ async function loadFootballDemo(authInfo) {
     renderResults(clMatches);
 
     statusText.textContent = `Loaded OpenLigaDB data (WC: ${wcMatches.length}, UCL: ${clMatches.length}).`;
-
-    await logAdminEvent({
-      eventType: "football_demo_viewed",
-      status: "success",
-      email: authInfo.user.email || "",
-      uid: authInfo.user.uid,
-      role: authInfo.role,
-      details: "Viewed football demo using OpenLigaDB"
-    });
+    await logAdminEvent({ eventType: "football_demo_viewed", status: "success", email: authInfo.user.email || "", uid: authInfo.user.uid, role: authInfo.role, details: "Viewed football demo using OpenLigaDB" });
   } catch (error) {
     renderCompetitions({ wcPath: "demo fallback", clPath: "demo fallback", wcCount: fallbackMatches.length, clCount: fallbackMatches.length, wcFallback: true, clFallback: true });
     renderFixtures(fallbackMatches);
@@ -196,7 +205,6 @@ if (!authInfo || !isSuperAdmin(authInfo.role)) {
   adminLogsLink?.classList.remove("d-none");
   footballDemoLink?.classList.remove("d-none");
   await loadFootballDemo(authInfo);
-
   document.getElementById("reloadFootballBtn")?.addEventListener("click", () => loadFootballDemo(authInfo));
 }
 
