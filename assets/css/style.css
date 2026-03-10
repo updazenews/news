@@ -542,3 +542,63 @@ body {
   color: #666;
   font-size: 1.15rem;
 }
+
+.football-admin-page {
+  background: radial-gradient(circle at top right, #e5ecff, #f5f7fb 45%, #edf2fb);
+}
+
+.football-hero {
+  border: 0;
+  background: linear-gradient(130deg, #0f172a, #1e3a8a 55%, #2563eb);
+  color: #fff;
+}
+
+.football-pill {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.football-surface {
+  background: #ffffff;
+}
+
+.football-section-badge {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #2563eb;
+  background: #eff6ff;
+  border: 1px solid #dbeafe;
+  border-radius: 999px;
+  padding: 0.25rem 0.65rem;
+}
+
+.football-match-card {
+  background: linear-gradient(180deg, #f8fafc, #f1f5f9);
+  border-color: #dde3ec;
+}
+
+.football-match-date {
+  color: #111827;
+}
+
+@media (max-width: 992px) {
+  .football-score-row {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  .football-team,
+  .football-team-right {
+    justify-content: center;
+  }
+
+  .football-goals-row {
+    flex-direction: column;
+    align-items: center;
+  }
+}

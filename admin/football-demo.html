@@ -8,7 +8,7 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous" />
   <link rel="stylesheet" href="../assets/css/style.css" />
 </head>
-<body class="admin-shell">
+<body class="admin-shell football-admin-page">
   <main class="container-fluid py-3">
     <div class="row g-3">
       <aside class="col-12 col-lg-3 col-xl-2">
@@ -32,26 +32,39 @@
       <section class="col-12 col-lg-9 col-xl-10">
         <div id="guardMessage" class="alert alert-warning d-none" role="alert"></div>
 
-        <section class="card admin-panel p-4 mb-3">
-          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
-            <h2 class="h5 mb-0">Football Data Demo (OpenLigaDB • Super Admin)</h2>
-            <button id="reloadFootballBtn" class="btn btn-outline-primary btn-sm" type="button">Reload</button>
+        <section class="card admin-panel football-hero p-4 mb-3">
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div>
+              <p class="football-pill mb-2">Super Admin Demo</p>
+              <h2 class="h4 mb-1">Football Data Hub</h2>
+              <p class="mb-0 text-white-50">Modern match center for FIFA World Cup and UEFA Champions League.</p>
+            </div>
+            <button id="reloadFootballBtn" class="btn btn-light btn-sm" type="button">Reload Live Data</button>
           </div>
-          <p id="footballStatus" class="small text-muted mt-2 mb-0">Loading football data from OpenLigaDB...</p>
+          <p id="footballStatus" class="small mt-3 mb-0 text-white-50">Loading football data from OpenLigaDB...</p>
         </section>
 
-        <section class="card admin-panel p-4 mb-3">
-          <h3 class="h6">Competitions Overview</h3>
+        <section class="card admin-panel p-4 mb-3 football-surface">
+          <div class="d-flex align-items-center justify-content-between mb-3">
+            <h3 class="h6 mb-0">Competitions Overview</h3>
+            <span class="football-section-badge">Live + Fallback</span>
+          </div>
           <div id="competitionCards" class="row g-3"></div>
         </section>
 
-        <section class="card admin-panel p-4 mb-3">
-          <h3 class="h6">UEFA Champions League Fixtures (Upcoming)</h3>
+        <section class="card admin-panel p-4 mb-3 football-surface">
+          <div class="d-flex align-items-center justify-content-between mb-3">
+            <h3 class="h6 mb-0">UEFA Champions League Fixtures (Upcoming)</h3>
+            <span class="football-section-badge">Upcoming</span>
+          </div>
           <div id="uclFixturesCards" class="football-match-list"><p class="text-muted mb-0">Loading...</p></div>
         </section>
 
-        <section class="card admin-panel p-4">
-          <h3 class="h6">UEFA Champions League Match Data (Recent Results)</h3>
+        <section class="card admin-panel p-4 football-surface">
+          <div class="d-flex align-items-center justify-content-between mb-3">
+            <h3 class="h6 mb-0">UEFA Champions League Match Data (Recent Results)</h3>
+            <span class="football-section-badge">Results</span>
+          </div>
           <div id="uclResultsCards" class="football-match-list"><p class="text-muted mb-0">Loading...</p></div>
         </section>
       </section>
