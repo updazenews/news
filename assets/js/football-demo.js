@@ -17,10 +17,10 @@ const adminLogsLink = document.getElementById("adminLogsLink");
 const footballDemoLink = document.getElementById("footballDemoLink");
 
 const fallbackTeams = [
-  { strTeam: "Mamelodi Sundowns", strBadge: "" },
-  { strTeam: "Orlando Pirates", strBadge: "" },
-  { strTeam: "Kaizer Chiefs", strBadge: "" },
-  { strTeam: "Stellenbosch FC", strBadge: "" }
+  { idTeam: "133604", strTeam: "Mamelodi Sundowns", strBadge: "" },
+  { idTeam: "133613", strTeam: "Orlando Pirates", strBadge: "" },
+  { idTeam: "133610", strTeam: "Kaizer Chiefs", strBadge: "" },
+  { idTeam: "139325", strTeam: "Stellenbosch FC", strBadge: "" }
 ];
 
 const fallbackTable = [
@@ -65,11 +65,6 @@ function logo(team = {}) {
   return `https://ui-avatars.com/api/?name=${text}&background=1e3a8a&color=fff&size=128`;
 }
 
-function seasonCode() {
-  const year = new Date().getFullYear();
-  return `${year}-${year + 1}`;
-}
-
 function timeText(dateValue, timeValue) {
   const iso = `${dateValue || ""}T${(timeValue || "00:00:00").slice(0, 8)}`;
   const parsed = new Date(iso);
@@ -94,15 +89,65 @@ function renderTeams(teams = []) {
   `).join("");
 }
 
-function renderStandings(rows = []) {
-  if (!rows.length) {
+function teamLookupPosition(teamDetails = {}) {
+  const direct = Number(teamDetails.intRank || teamDetails.intPosition || teamDetails.strPosition || 0);
+  return Number.isFinite(direct) && direct > 0 ? direct : null;
+}
+
+async function buildPositionLookup(teams = []) {
+  const requests = teams.map(async (team) => {
+    if (!team?.idTeam) return null;
+    try {
+      const payload = await fetchSportsDb(`/lookupteam.php?id=${team.idTeam}`);
+      const detail = Array.isArray(payload?.teams) ? payload.teams[0] : null;
+      const position = teamLookupPosition(detail || {});
+      if (!position) return null;
+      return { teamName: (team.strTeam || "").toLowerCase(), position };
+    } catch {
+      return null;
+    }
+  });
+
+  const rows = await Promise.all(requests);
+  return rows.filter(Boolean).reduce((acc, row) => {
+    acc[row.teamName] = row.position;
+    return acc;
+  }, {});
+}
+
+function renderStandings(tableRows = [], teams = [], lookupPositions = {}) {
+  if (!tableRows.length && !teams.length) {
     standingsBody.innerHTML = '<tr><td colspan="8" class="text-muted">Standings unavailable.</td></tr>';
     return;
   }
 
-  standingsBody.innerHTML = rows.map((row) => `
+  const tableByTeam = tableRows.reduce((acc, row) => {
+    acc[(row.strTeam || "").toLowerCase()] = row;
+    return acc;
+  }, {});
+
+  const merged = teams.map((team) => {
+    const key = (team.strTeam || "").toLowerCase();
+    const row = tableByTeam[key] || {};
+    const rank = Number(row.intRank || lookupPositions[key] || 9999);
+    return {
+      intRank: rank,
+      strTeam: team.strTeam || row.strTeam || "-",
+      intPlayed: row.intPlayed ?? "-",
+      intWin: row.intWin ?? "-",
+      intDraw: row.intDraw ?? "-",
+      intLoss: row.intLoss ?? "-",
+      intGoalsDifference: row.intGoalsDifference ?? "-",
+      intPoints: row.intPoints ?? "-"
+    };
+  });
+
+  const table = merged.length ? merged : tableRows;
+  table.sort((a, b) => Number(a.intRank || 9999) - Number(b.intRank || 9999) || String(a.strTeam).localeCompare(String(b.strTeam)));
+
+  standingsBody.innerHTML = table.map((row) => `
     <tr>
-      <td>${escapeHtml(row.intRank ?? "-")}</td>
+      <td>${escapeHtml(row.intRank >= 9999 ? "-" : row.intRank)}</td>
       <td>${escapeHtml(row.strTeam || "-")}</td>
       <td>${escapeHtml(row.intPlayed ?? "-")}</td>
       <td>${escapeHtml(row.intWin ?? "-")}</td>
@@ -169,7 +214,8 @@ async function loadFootballDemo(authInfo) {
     });
 
     renderTeams(teams);
-    renderStandings(table);
+    const lookupPositions = await buildPositionLookup(teams);
+    renderStandings(table, teams, lookupPositions);
     renderEvents(events);
 
     statusText.textContent = `Loaded TheSportsDB PSL endpoints (id=4802) (teams: ${teams.length}, standings: ${table.length}, events: ${events.length}).`;
@@ -184,7 +230,7 @@ async function loadFootballDemo(authInfo) {
     });
   } catch (error) {
     renderTeams(fallbackTeams);
-    renderStandings(fallbackTable);
+    renderStandings(fallbackTable, fallbackTeams, {});
     renderEvents(fallbackEvents);
     statusText.textContent = `TheSportsDB fetch failed (${error.message}). Showing fallback demo data.`;
   }
