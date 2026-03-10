@@ -138,8 +138,8 @@ async function loadFootballDemo(authInfo) {
 
   try {
     const [teamsResp, standingsResp, pastResp, nextResp] = await Promise.all([
-      fetchSportsDb("/search_all_teams.php?l=South%20African%20Premier%20Soccer%20League"),
-      fetchSportsDb(`/lookuptable.php?l=${PSL_LEAGUE_ID}&s=${seasonCode()}`),
+      fetchSportsDb(`/search_all_teams.php?l=${encodeURIComponent(PSL_NAME)}`),
+      fetchSportsDb(`/lookuptable.php?l=${PSL_LEAGUE_ID}`),
       fetchSportsDb(`/eventspastleague.php?id=${PSL_LEAGUE_ID}`),
       fetchSportsDb(`/eventsnextleague.php?id=${PSL_LEAGUE_ID}`)
     ]);
@@ -149,7 +149,11 @@ async function loadFootballDemo(authInfo) {
     const events = [
       ...(Array.isArray(pastResp?.events) ? pastResp.events : []),
       ...(Array.isArray(nextResp?.events) ? nextResp.events : [])
-    ].sort((a, b) => new Date(`${b.dateEvent || ""}T${b.strTime || "00:00:00"}`) - new Date(`${a.dateEvent || ""}T${a.strTime || "00:00:00"}`));
+    ].sort((a, b) => {
+      const da = new Date(`${a.dateEvent || ""}T${a.strTime || "00:00:00"}`).getTime() || 0;
+      const db = new Date(`${b.dateEvent || ""}T${b.strTime || "00:00:00"}`).getTime() || 0;
+      return db - da;
+    });
 
     renderTeams(teams);
     renderStandings(table);
