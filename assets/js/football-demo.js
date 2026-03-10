@@ -4,6 +4,7 @@ import { signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-aut
 
 const API_BASE = "https://www.thesportsdb.com/api/v1/json/3";
 const PSL_NAME = "South African Premier Soccer League";
+const PSL_LEAGUE_ID = "4802";
 
 const guardMessage = document.getElementById("guardMessage");
 const statusText = document.getElementById("footballStatus");
@@ -132,25 +133,15 @@ function renderEvents(events = []) {
   }).join("");
 }
 
-async function resolveLeagueId() {
-  const leagues = await fetchSportsDb(`/search_all_leagues.php?l=${encodeURIComponent(PSL_NAME)}`);
-  const list = Array.isArray(leagues?.countries) ? leagues.countries : [];
-  const exact = list.find((item) => (item.strLeague || "").toLowerCase() === PSL_NAME.toLowerCase());
-  return exact?.idLeague || list[0]?.idLeague || null;
-}
-
 async function loadFootballDemo(authInfo) {
   statusText.textContent = "Loading SA PSL teams, standings, and match events from TheSportsDB...";
 
   try {
-    const leagueId = await resolveLeagueId();
-    if (!leagueId) throw new Error("League ID not found for SA PSL");
-
     const [teamsResp, standingsResp, pastResp, nextResp] = await Promise.all([
-      fetchSportsDb(`/search_all_teams.php?l=${encodeURIComponent(PSL_NAME)}`),
-      fetchSportsDb(`/lookuptable.php?l=${leagueId}&s=${seasonCode()}`),
-      fetchSportsDb(`/eventspastleague.php?id=${leagueId}`),
-      fetchSportsDb(`/eventsnextleague.php?id=${leagueId}`)
+      fetchSportsDb("/search_all_teams.php?l=South%20African%20Premier%20Soccer%20League"),
+      fetchSportsDb(`/lookuptable.php?l=${PSL_LEAGUE_ID}&s=${seasonCode()}`),
+      fetchSportsDb(`/eventspastleague.php?id=${PSL_LEAGUE_ID}`),
+      fetchSportsDb(`/eventsnextleague.php?id=${PSL_LEAGUE_ID}`)
     ]);
 
     const teams = Array.isArray(teamsResp?.teams) ? teamsResp.teams : [];
@@ -164,7 +155,7 @@ async function loadFootballDemo(authInfo) {
     renderStandings(table);
     renderEvents(events);
 
-    statusText.textContent = `Loaded TheSportsDB data (teams: ${teams.length}, standings: ${table.length}, events: ${events.length}).`;
+    statusText.textContent = `Loaded TheSportsDB PSL endpoints (id=4802) (teams: ${teams.length}, standings: ${table.length}, events: ${events.length}).`;
 
     await logAdminEvent({
       eventType: "football_demo_viewed",
