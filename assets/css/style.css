@@ -685,3 +685,72 @@ body {
   text-align: center;
   margin-top: -0.2rem;
 }
+
+.football-team-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.8rem;
+}
+
+.football-team-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid #dbe3f0;
+  border-radius: 0.7rem;
+  background: #f8fbff;
+}
+
+.football-team-card-logo {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+}
+
+.football-team-card-name {
+  font-weight: 600;
+}
+
+.football-standings-table th {
+  background: #f8fafc;
+  color: #374151;
+}
+
+.football-event-list {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.football-event-card {
+  border: 1px solid #dbe3f0;
+  border-radius: 0.7rem;
+  padding: 0.85rem 1rem;
+  background: #f8fbff;
+}
+
+.football-event-top {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) auto minmax(160px, 1fr);
+  gap: 0.8rem;
+  align-items: center;
+}
+
+.football-event-team {
+  font-weight: 600;
+}
+
+.football-event-score {
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.football-event-meta {
+  margin-top: 0.4rem;
+  color: #6b7280;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  font-size: 0.9rem;
+  flex-wrap: wrap;
+}

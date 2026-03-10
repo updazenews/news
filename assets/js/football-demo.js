@@ -2,22 +2,35 @@ import { auth } from "./firebase-config.js";
 import { canManageUsers, guardAdminRoute, isSuperAdmin, logAdminEvent } from "./auth.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-const API_BASE = "https://api.openligadb.de";
+const API_BASE = "https://www.thesportsdb.com/api/v1/json/3";
+const PSL_NAME = "South African Premier Soccer League";
 
 const guardMessage = document.getElementById("guardMessage");
 const statusText = document.getElementById("footballStatus");
-const competitionCards = document.getElementById("competitionCards");
-const fixturesWrap = document.getElementById("uclFixturesCards");
-const resultsWrap = document.getElementById("uclResultsCards");
+const teamsGrid = document.getElementById("pslTeamsGrid");
+const standingsBody = document.getElementById("pslStandingsBody");
+const eventsList = document.getElementById("pslEventsList");
 const adminUserLabel = document.getElementById("adminUserLabel");
 const manageUsersLink = document.getElementById("manageUsersLink");
 const adminLogsLink = document.getElementById("adminLogsLink");
 const footballDemoLink = document.getElementById("footballDemoLink");
 
-const fallbackMatches = [
-  { leagueName: "UEFA Champions League", matchDateTimeUTC: new Date(Date.now() + 86400000).toISOString(), team1: { teamName: "Real Madrid", teamIconUrl: "" }, team2: { teamName: "Manchester City", teamIconUrl: "" }, matchIsFinished: false, group: { groupOrderID: 1, groupName: "Round of 16" }, matchResults: [], goals: [] },
-  { leagueName: "UEFA Champions League", matchDateTimeUTC: new Date(Date.now() + 172800000).toISOString(), team1: { teamName: "Inter" }, team2: { teamName: "Bayern Munich" }, matchIsFinished: false, group: { groupOrderID: 1, groupName: "Round of 16" }, matchResults: [], goals: [] },
-  { leagueName: "UEFA Champions League", matchDateTimeUTC: new Date(Date.now() - 86400000).toISOString(), team1: { teamName: "PSG", teamIconUrl: "https://upload.wikimedia.org/wikipedia/en/a/a7/Paris_Saint-Germain_F.C..svg" }, team2: { teamName: "Arsenal", teamIconUrl: "https://upload.wikimedia.org/wikipedia/en/5/53/Arsenal_FC.svg" }, matchIsFinished: true, group: { groupOrderID: 6, groupName: "Round of 16" }, matchResults: [{ resultTypeID: 2, pointsTeam1: 2, pointsTeam2: 1 }], goals: [{ scoreTeam1: 1, scoreTeam2: 0, goalGetterName: "Hakimi" }, { scoreTeam1: 2, scoreTeam2: 0, goalGetterName: "Ruiz" }, { scoreTeam1: 2, scoreTeam2: 1, goalGetterName: "Saka" }], location: { locationStadium: "Parc des Princes", locationCity: "Paris" } }
+const fallbackTeams = [
+  { strTeam: "Mamelodi Sundowns", strTeamBadge: "" },
+  { strTeam: "Orlando Pirates", strTeamBadge: "" },
+  { strTeam: "Kaizer Chiefs", strTeamBadge: "" },
+  { strTeam: "Stellenbosch FC", strTeamBadge: "" }
+];
+
+const fallbackTable = [
+  { intRank: 1, strTeam: "Mamelodi Sundowns", intPlayed: 20, intWin: 15, intDraw: 3, intLoss: 2, intGoalsDifference: 24, intPoints: 48 },
+  { intRank: 2, strTeam: "Orlando Pirates", intPlayed: 20, intWin: 12, intDraw: 4, intLoss: 4, intGoalsDifference: 16, intPoints: 40 },
+  { intRank: 3, strTeam: "Stellenbosch FC", intPlayed: 20, intWin: 10, intDraw: 6, intLoss: 4, intGoalsDifference: 8, intPoints: 36 }
+];
+
+const fallbackEvents = [
+  { strEvent: "Mamelodi Sundowns vs Orlando Pirates", dateEvent: "2026-03-15", strTime: "17:30:00", intHomeScore: "2", intAwayScore: "1", strStatus: "Match Finished", strVenue: "Loftus Versfeld Stadium" },
+  { strEvent: "Kaizer Chiefs vs Cape Town City", dateEvent: "2026-03-16", strTime: "19:45:00", intHomeScore: "", intAwayScore: "", strStatus: "Not Started", strVenue: "FNB Stadium" }
 ];
 
 function escapeHtml(value = "") {
@@ -25,158 +38,146 @@ function escapeHtml(value = "") {
   return String(value).replace(/[&<>"']/g, (char) => map[char]);
 }
 
-async function fetchOpenLiga(path) {
+async function fetchSportsDb(path) {
   const response = await fetch(`${API_BASE}${path}`, { method: "GET", mode: "cors" });
-  if (!response.ok) throw new Error(`OpenLigaDB HTTP ${response.status} for ${path}`);
+  if (!response.ok) throw new Error(`TheSportsDB HTTP ${response.status} for ${path}`);
   return response.json();
 }
 
-async function firstSuccessful(candidates = []) {
-  let lastError = "No candidate endpoint available";
-  for (const candidate of candidates) {
-    try {
-      const data = await fetchOpenLiga(candidate.path);
-      if (Array.isArray(data) && data.length) return { data, candidate };
-      if (Array.isArray(data) && !data.length) {
-        lastError = `${candidate.path}: empty result`;
-        continue;
-      }
-      return { data, candidate };
-    } catch (error) {
-      lastError = `${candidate.path}: ${error.message}`;
-    }
+function logo(team = {}) {
+  if (team.strTeamBadge) return team.strTeamBadge;
+  const text = encodeURIComponent((team.strTeam || "PSL").slice(0, 2).toUpperCase());
+  return `https://ui-avatars.com/api/?name=${text}&background=1e3a8a&color=fff&size=128`;
+}
+
+function seasonCode() {
+  const year = new Date().getFullYear();
+  return `${year}-${year + 1}`;
+}
+
+function timeText(dateValue, timeValue) {
+  const iso = `${dateValue || ""}T${(timeValue || "00:00:00").slice(0, 8)}`;
+  const parsed = new Date(iso);
+  if (Number.isNaN(parsed.getTime())) return "-";
+  return parsed.toLocaleString(undefined, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+}
+
+function renderTeams(teams = []) {
+  if (!teams.length) {
+    teamsGrid.innerHTML = '<p class="text-muted mb-0">No teams found.</p>';
+    return;
   }
-  throw new Error(lastError);
-}
 
-function logoForTeam(team = {}) {
-  if (team.teamIconUrl) return team.teamIconUrl;
-  const label = encodeURIComponent((team.teamName || "Team").slice(0, 2).toUpperCase());
-  return `https://ui-avatars.com/api/?name=${label}&background=0f172a&color=ffffff&size=64`;
-}
-
-function formatDate(iso) {
-  if (!iso) return "-";
-  return new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "2-digit" });
-}
-
-function formatTime(iso) {
-  if (!iso) return "-";
-  return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
-}
-
-function scoreObj(match) {
-  const results = Array.isArray(match?.matchResults) ? match.matchResults : [];
-  const fullTime = results.find((r) => Number(r.resultTypeID) === 2) || results[results.length - 1] || {};
-  return { home: fullTime.pointsTeam1 ?? "-", away: fullTime.pointsTeam2 ?? "-" };
-}
-
-function venueText(match) {
-  const stadium = match?.location?.locationStadium;
-  const city = match?.location?.locationCity;
-  if (stadium && city) return `${stadium}, ${city}`;
-  return stadium || city || "Venue not provided";
-}
-
-function competitionCard({ title, sourcePath, count, note }) {
-  return `
-    <div class="col-12 col-md-6">
-      <article class="border rounded p-3 h-100">
-        <h4 class="h6 mb-1">${escapeHtml(title)}</h4>
-        <p class="small mb-1 text-muted">Source: OpenLigaDB</p>
-        <p class="small mb-1 text-muted">Endpoint: <code>${escapeHtml(sourcePath || "demo fallback")}</code></p>
-        <p class="small mb-0 text-muted">Items: ${escapeHtml(String(count ?? 0))}${note ? ` • ${escapeHtml(note)}` : ""}</p>
-      </article>
-    </div>
-  `;
-}
-
-function renderCompetitions(info) {
-  competitionCards.innerHTML = [
-    competitionCard({ title: "FIFA World Cup", sourcePath: info?.wcPath, count: info?.wcCount ?? 0, note: info?.wcFallback ? "Demo fallback" : "Live" }),
-    competitionCard({ title: "UEFA Champions League", sourcePath: info?.clPath, count: info?.clCount ?? 0, note: info?.clFallback ? "Demo fallback" : "Live" })
-  ].join("");
-}
-
-function renderLeagueBoard(matches = [], mode = "fixtures") {
-  if (!matches.length) return '<p class="text-muted mb-0">No match data available.</p>';
-
-  const league = matches[0]?.leagueName || "Champions League";
-  const round = matches[0]?.group?.groupName || "Knockout Stage";
-
-  const rows = matches.map((match) => {
-    const homeName = match?.team1?.teamName || "Home";
-    const awayName = match?.team2?.teamName || "Away";
-    const score = scoreObj(match);
-    const centerLabel = mode === "fixtures" ? formatTime(match.matchDateTimeUTC || match.matchDateTime) : `${score.home} - ${score.away}`;
-    const statusLabel = match.matchIsFinished ? "FT" : "Upcoming";
-    const footer = mode === "results" ? venueText(match) : formatDate(match.matchDateTimeUTC || match.matchDateTime);
-
-    return `
-      <div class="football-board-row">
-        <div class="football-board-team football-board-home">
-          <span class="football-board-name">${escapeHtml(homeName)}</span>
-          <img src="${escapeHtml(logoForTeam(match.team1 || {}))}" alt="${escapeHtml(homeName)} logo" class="football-board-logo" loading="lazy" />
-        </div>
-        <div class="football-board-center">
-          <div class="football-board-main">${escapeHtml(centerLabel)}</div>
-          <div class="football-board-status">${escapeHtml(statusLabel)}</div>
-        </div>
-        <div class="football-board-team football-board-away">
-          <img src="${escapeHtml(logoForTeam(match.team2 || {}))}" alt="${escapeHtml(awayName)} logo" class="football-board-logo" loading="lazy" />
-          <span class="football-board-name">${escapeHtml(awayName)}</span>
-        </div>
-        <div class="football-board-footer">${escapeHtml(footer)}</div>
+  teamsGrid.innerHTML = teams.slice(0, 18).map((team) => `
+    <article class="football-team-card">
+      <img src="${escapeHtml(logo(team))}" alt="${escapeHtml(team.strTeam || "Team")} logo" class="football-team-card-logo" loading="lazy" />
+      <div>
+        <p class="football-team-card-name mb-0">${escapeHtml(team.strTeam || "Unknown Team")}</p>
+        <small class="text-muted">${escapeHtml(team.strStadium || "South African PSL")}</small>
       </div>
+    </article>
+  `).join("");
+}
+
+function renderStandings(rows = []) {
+  if (!rows.length) {
+    standingsBody.innerHTML = '<tr><td colspan="8" class="text-muted">Standings unavailable.</td></tr>';
+    return;
+  }
+
+  standingsBody.innerHTML = rows.slice(0, 16).map((row) => `
+    <tr>
+      <td>${escapeHtml(row.intRank ?? "-")}</td>
+      <td>${escapeHtml(row.strTeam || "-")}</td>
+      <td>${escapeHtml(row.intPlayed ?? "-")}</td>
+      <td>${escapeHtml(row.intWin ?? "-")}</td>
+      <td>${escapeHtml(row.intDraw ?? "-")}</td>
+      <td>${escapeHtml(row.intLoss ?? "-")}</td>
+      <td>${escapeHtml(row.intGoalsDifference ?? "-")}</td>
+      <td><strong>${escapeHtml(row.intPoints ?? "-")}</strong></td>
+    </tr>
+  `).join("");
+}
+
+function eventScore(event) {
+  const home = event.intHomeScore;
+  const away = event.intAwayScore;
+  if (home === null || home === "" || away === null || away === "") return "vs";
+  return `${home} - ${away}`;
+}
+
+function renderEvents(events = []) {
+  if (!events.length) {
+    eventsList.innerHTML = '<p class="text-muted mb-0">No match events available.</p>';
+    return;
+  }
+
+  eventsList.innerHTML = events.slice(0, 10).map((event) => {
+    const [home = "Home", away = "Away"] = String(event.strEvent || "Home vs Away").split(" vs ");
+    return `
+      <article class="football-event-card">
+        <div class="football-event-top">
+          <span class="football-event-team">${escapeHtml(home)}</span>
+          <span class="football-event-score">${escapeHtml(eventScore(event))}</span>
+          <span class="football-event-team text-end">${escapeHtml(away)}</span>
+        </div>
+        <div class="football-event-meta">
+          <span>${escapeHtml(timeText(event.dateEvent, event.strTime))}</span>
+          <span>${escapeHtml(event.strStatus || "Scheduled")}</span>
+          <span>${escapeHtml(event.strVenue || "Venue TBC")}</span>
+        </div>
+      </article>
     `;
   }).join("");
-
-  return `
-    <article class="football-board">
-      <header class="football-board-header">
-        <div>
-          <p class="football-board-title mb-0">${escapeHtml(league)}</p>
-          <small class="text-muted">${escapeHtml(round)}</small>
-        </div>
-      </header>
-      <div class="football-board-lines">${rows}</div>
-    </article>
-  `;
 }
 
-function renderFixtures(matches = []) {
-  const upcoming = matches.filter((m) => !m.matchIsFinished).slice(0, 8);
-  fixturesWrap.innerHTML = upcoming.length ? renderLeagueBoard(upcoming, "fixtures") : '<p class="text-muted mb-0">No upcoming fixtures found.</p>';
-}
-
-function renderResults(matches = []) {
-  const played = matches.filter((m) => m.matchIsFinished).slice(0, 8);
-  resultsWrap.innerHTML = played.length ? renderLeagueBoard(played, "results") : '<p class="text-muted mb-0">No recent match data found.</p>';
+async function resolveLeagueId() {
+  const leagues = await fetchSportsDb(`/search_all_leagues.php?l=${encodeURIComponent(PSL_NAME)}`);
+  const list = Array.isArray(leagues?.countries) ? leagues.countries : [];
+  const exact = list.find((item) => (item.strLeague || "").toLowerCase() === PSL_NAME.toLowerCase());
+  return exact?.idLeague || list[0]?.idLeague || null;
 }
 
 async function loadFootballDemo(authInfo) {
-  statusText.textContent = "Loading FIFA World Cup and UEFA Champions League data from OpenLigaDB...";
+  statusText.textContent = "Loading SA PSL teams, standings, and match events from TheSportsDB...";
 
   try {
-    const year = new Date().getFullYear();
-    const wcCandidates = [{ path: `/getmatchdata/wm/${year}` }, { path: "/getmatchdata/wm" }, { path: "/getmatchdata/fifa-wm" }, { path: "/getmatchdata" }];
-    const clCandidates = [{ path: `/getmatchdata/championsleague/${year}` }, { path: "/getmatchdata/championsleague" }, { path: "/getmatchdata/uefa-champions-league" }, { path: "/getmatchdata" }];
+    const leagueId = await resolveLeagueId();
+    if (!leagueId) throw new Error("League ID not found for SA PSL");
 
-    const [wcResolved, clResolved] = await Promise.all([firstSuccessful(wcCandidates), firstSuccessful(clCandidates)]);
-    const wcMatches = Array.isArray(wcResolved.data) ? wcResolved.data : [];
-    const clMatches = Array.isArray(clResolved.data) ? clResolved.data : [];
+    const [teamsResp, standingsResp, pastResp, nextResp] = await Promise.all([
+      fetchSportsDb(`/search_all_teams.php?l=${encodeURIComponent(PSL_NAME)}`),
+      fetchSportsDb(`/lookuptable.php?l=${leagueId}&s=${seasonCode()}`),
+      fetchSportsDb(`/eventspastleague.php?id=${leagueId}`),
+      fetchSportsDb(`/eventsnextleague.php?id=${leagueId}`)
+    ]);
 
-    renderCompetitions({ wcPath: wcResolved.candidate.path, clPath: clResolved.candidate.path, wcCount: wcMatches.length, clCount: clMatches.length, wcFallback: false, clFallback: false });
-    renderFixtures(clMatches);
-    renderResults(clMatches);
+    const teams = Array.isArray(teamsResp?.teams) ? teamsResp.teams : [];
+    const table = Array.isArray(standingsResp?.table) ? standingsResp.table : [];
+    const events = [
+      ...(Array.isArray(pastResp?.events) ? pastResp.events : []),
+      ...(Array.isArray(nextResp?.events) ? nextResp.events : [])
+    ].sort((a, b) => new Date(`${b.dateEvent || ""}T${b.strTime || "00:00:00"}`) - new Date(`${a.dateEvent || ""}T${a.strTime || "00:00:00"}`));
 
-    statusText.textContent = `Loaded OpenLigaDB data (WC: ${wcMatches.length}, UCL: ${clMatches.length}).`;
-    await logAdminEvent({ eventType: "football_demo_viewed", status: "success", email: authInfo.user.email || "", uid: authInfo.user.uid, role: authInfo.role, details: "Viewed football demo using OpenLigaDB" });
+    renderTeams(teams);
+    renderStandings(table);
+    renderEvents(events);
+
+    statusText.textContent = `Loaded TheSportsDB data (teams: ${teams.length}, standings: ${table.length}, events: ${events.length}).`;
+
+    await logAdminEvent({
+      eventType: "football_demo_viewed",
+      status: "success",
+      email: authInfo.user.email || "",
+      uid: authInfo.user.uid,
+      role: authInfo.role,
+      details: "Viewed SA PSL demo using TheSportsDB"
+    });
   } catch (error) {
-    renderCompetitions({ wcPath: "demo fallback", clPath: "demo fallback", wcCount: fallbackMatches.length, clCount: fallbackMatches.length, wcFallback: true, clFallback: true });
-    renderFixtures(fallbackMatches);
-    renderResults(fallbackMatches);
-    statusText.textContent = `OpenLigaDB live fetch failed (${error.message}). Showing demo fallback match data.`;
+    renderTeams(fallbackTeams);
+    renderStandings(fallbackTable);
+    renderEvents(fallbackEvents);
+    statusText.textContent = `TheSportsDB fetch failed (${error.message}). Showing fallback demo data.`;
   }
 }
 

@@ -36,36 +36,41 @@
           <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
             <div>
               <p class="football-pill mb-2">Super Admin Demo</p>
-              <h2 class="h4 mb-1">Football Data Hub</h2>
-              <p class="mb-0 text-white-50">Modern match center for FIFA World Cup and UEFA Champions League.</p>
+              <h2 class="h4 mb-1">SA PSL Match Center</h2>
+              <p class="mb-0 text-white-50">Powered by TheSportsDB API for teams, standings, and match events.</p>
             </div>
             <button id="reloadFootballBtn" class="btn btn-light btn-sm" type="button">Reload Live Data</button>
           </div>
-          <p id="footballStatus" class="small mt-3 mb-0 text-white-50">Loading football data from OpenLigaDB...</p>
+          <p id="footballStatus" class="small mt-3 mb-0 text-white-50">Loading SA PSL data from TheSportsDB...</p>
         </section>
 
         <section class="card admin-panel p-4 mb-3 football-surface">
           <div class="d-flex align-items-center justify-content-between mb-3">
-            <h3 class="h6 mb-0">Competitions Overview</h3>
-            <span class="football-section-badge">Live + Fallback</span>
+            <h3 class="h6 mb-0">South African PSL Teams</h3>
+            <span class="football-section-badge">Teams</span>
           </div>
-          <div id="competitionCards" class="row g-3"></div>
+          <div id="pslTeamsGrid" class="football-team-grid"><p class="text-muted mb-0">Loading teams...</p></div>
         </section>
 
         <section class="card admin-panel p-4 mb-3 football-surface">
           <div class="d-flex align-items-center justify-content-between mb-3">
-            <h3 class="h6 mb-0">UEFA Champions League Fixtures (Upcoming)</h3>
-            <span class="football-section-badge">Upcoming</span>
+            <h3 class="h6 mb-0">PSL Standings</h3>
+            <span class="football-section-badge">Table</span>
           </div>
-          <div id="uclFixturesCards" class="football-match-list"><p class="text-muted mb-0">Loading...</p></div>
+          <div class="table-responsive">
+            <table class="table table-sm align-middle football-standings-table">
+              <thead><tr><th>#</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr></thead>
+              <tbody id="pslStandingsBody"><tr><td colspan="8" class="text-muted">Loading standings...</td></tr></tbody>
+            </table>
+          </div>
         </section>
 
         <section class="card admin-panel p-4 football-surface">
           <div class="d-flex align-items-center justify-content-between mb-3">
-            <h3 class="h6 mb-0">UEFA Champions League Match Data (Recent Results)</h3>
-            <span class="football-section-badge">Results</span>
+            <h3 class="h6 mb-0">PSL Match Events</h3>
+            <span class="football-section-badge">Events</span>
           </div>
-          <div id="uclResultsCards" class="football-match-list"><p class="text-muted mb-0">Loading...</p></div>
+          <div id="pslEventsList" class="football-event-list"><p class="text-muted mb-0">Loading match events...</p></div>
         </section>
       </section>
     </div>
