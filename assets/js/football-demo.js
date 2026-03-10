@@ -16,10 +16,10 @@ const adminLogsLink = document.getElementById("adminLogsLink");
 const footballDemoLink = document.getElementById("footballDemoLink");
 
 const fallbackTeams = [
-  { strTeam: "Mamelodi Sundowns", strTeamBadge: "" },
-  { strTeam: "Orlando Pirates", strTeamBadge: "" },
-  { strTeam: "Kaizer Chiefs", strTeamBadge: "" },
-  { strTeam: "Stellenbosch FC", strTeamBadge: "" }
+  { strTeam: "Mamelodi Sundowns", strBadge: "" },
+  { strTeam: "Orlando Pirates", strBadge: "" },
+  { strTeam: "Kaizer Chiefs", strBadge: "" },
+  { strTeam: "Stellenbosch FC", strBadge: "" }
 ];
 
 const fallbackTable = [
@@ -45,6 +45,7 @@ async function fetchSportsDb(path) {
 }
 
 function logo(team = {}) {
+  if (team.strBadge) return team.strBadge;
   if (team.strTeamBadge) return team.strTeamBadge;
   const text = encodeURIComponent((team.strTeam || "PSL").slice(0, 2).toUpperCase());
   return `https://ui-avatars.com/api/?name=${text}&background=1e3a8a&color=fff&size=128`;
@@ -85,7 +86,7 @@ function renderStandings(rows = []) {
     return;
   }
 
-  standingsBody.innerHTML = rows.slice(0, 16).map((row) => `
+  standingsBody.innerHTML = rows.map((row) => `
     <tr>
       <td>${escapeHtml(row.intRank ?? "-")}</td>
       <td>${escapeHtml(row.strTeam || "-")}</td>
