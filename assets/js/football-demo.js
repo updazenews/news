@@ -15,8 +15,9 @@ const adminLogsLink = document.getElementById("adminLogsLink");
 const footballDemoLink = document.getElementById("footballDemoLink");
 
 const fallbackMatches = [
-  { leagueName: "UEFA Champions League", matchDateTimeUTC: new Date(Date.now() + 86400000).toISOString(), team1: { teamName: "Real Madrid", teamIconUrl: "" }, team2: { teamName: "Manchester City", teamIconUrl: "" }, matchIsFinished: false, group: { groupOrderID: 1, groupName: "Matchday 1" }, matchResults: [], goals: [] },
-  { leagueName: "UEFA Champions League", matchDateTimeUTC: new Date(Date.now() - 86400000).toISOString(), team1: { teamName: "PSG", teamIconUrl: "https://upload.wikimedia.org/wikipedia/en/a/a7/Paris_Saint-Germain_F.C..svg" }, team2: { teamName: "Arsenal", teamIconUrl: "https://upload.wikimedia.org/wikipedia/en/5/53/Arsenal_FC.svg" }, matchIsFinished: true, group: { groupOrderID: 6, groupName: "Matchday 6" }, matchResults: [{ resultTypeID: 2, pointsTeam1: 2, pointsTeam2: 1 }], goals: [{ scoreTeam1: 1, scoreTeam2: 0, goalGetterName: "Hakimi" }, { scoreTeam1: 2, scoreTeam2: 0, goalGetterName: "Ruiz" }, { scoreTeam1: 2, scoreTeam2: 1, goalGetterName: "Saka" }], location: { locationStadium: "Parc des Princes", locationCity: "Paris" } }
+  { leagueName: "UEFA Champions League", matchDateTimeUTC: new Date(Date.now() + 86400000).toISOString(), team1: { teamName: "Real Madrid", teamIconUrl: "" }, team2: { teamName: "Manchester City", teamIconUrl: "" }, matchIsFinished: false, group: { groupOrderID: 1, groupName: "Round of 16" }, matchResults: [], goals: [] },
+  { leagueName: "UEFA Champions League", matchDateTimeUTC: new Date(Date.now() + 172800000).toISOString(), team1: { teamName: "Inter" }, team2: { teamName: "Bayern Munich" }, matchIsFinished: false, group: { groupOrderID: 1, groupName: "Round of 16" }, matchResults: [], goals: [] },
+  { leagueName: "UEFA Champions League", matchDateTimeUTC: new Date(Date.now() - 86400000).toISOString(), team1: { teamName: "PSG", teamIconUrl: "https://upload.wikimedia.org/wikipedia/en/a/a7/Paris_Saint-Germain_F.C..svg" }, team2: { teamName: "Arsenal", teamIconUrl: "https://upload.wikimedia.org/wikipedia/en/5/53/Arsenal_FC.svg" }, matchIsFinished: true, group: { groupOrderID: 6, groupName: "Round of 16" }, matchResults: [{ resultTypeID: 2, pointsTeam1: 2, pointsTeam2: 1 }], goals: [{ scoreTeam1: 1, scoreTeam2: 0, goalGetterName: "Hakimi" }, { scoreTeam1: 2, scoreTeam2: 0, goalGetterName: "Ruiz" }, { scoreTeam1: 2, scoreTeam2: 1, goalGetterName: "Saka" }], location: { locationStadium: "Parc des Princes", locationCity: "Paris" } }
 ];
 
 function escapeHtml(value = "") {
@@ -59,27 +60,15 @@ function formatDate(iso) {
   return new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "2-digit" });
 }
 
-function formatDateTime(iso) {
+function formatTime(iso) {
   if (!iso) return "-";
-  return new Date(iso).toLocaleString(undefined, { weekday: "short", hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
 }
 
 function scoreObj(match) {
   const results = Array.isArray(match?.matchResults) ? match.matchResults : [];
   const fullTime = results.find((r) => Number(r.resultTypeID) === 2) || results[results.length - 1] || {};
   return { home: fullTime.pointsTeam1 ?? "-", away: fullTime.pointsTeam2 ?? "-" };
-}
-
-function scorerText(match, homeSide = true) {
-  const goals = Array.isArray(match?.goals) ? match.goals : [];
-  if (!goals.length) return "";
-  const teamGoals = goals.filter((goal) => {
-    const prevHome = Number(goal.scoreTeam1 ?? 0) - Number(goal.scoreTeam2 ?? 0);
-    const before = homeSide ? prevHome > 0 : prevHome < 0;
-    const now = homeSide ? Number(goal.scoreTeam1) > Number(goal.scoreTeam2) : Number(goal.scoreTeam2) > Number(goal.scoreTeam1);
-    return now || before;
-  }).map((goal) => goal.goalGetterName).filter(Boolean);
-  return teamGoals.slice(0, 3).join(", ");
 }
 
 function venueText(match) {
@@ -109,64 +98,60 @@ function renderCompetitions(info) {
   ].join("");
 }
 
-function matchCard(match, finished = true) {
-  const score = scoreObj(match);
-  const homeName = match?.team1?.teamName || "Home";
-  const awayName = match?.team2?.teamName || "Away";
-  const league = match?.leagueName || "UEFA Champions League";
-  const dateLabel = formatDate(match.matchDateTimeUTC || match.matchDateTime);
-  const homeScorers = scorerText(match, true);
-  const awayScorers = scorerText(match, false);
+function renderLeagueBoard(matches = [], mode = "fixtures") {
+  if (!matches.length) return '<p class="text-muted mb-0">No match data available.</p>';
+
+  const league = matches[0]?.leagueName || "Champions League";
+  const round = matches[0]?.group?.groupName || "Knockout Stage";
+
+  const rows = matches.map((match) => {
+    const homeName = match?.team1?.teamName || "Home";
+    const awayName = match?.team2?.teamName || "Away";
+    const score = scoreObj(match);
+    const centerLabel = mode === "fixtures" ? formatTime(match.matchDateTimeUTC || match.matchDateTime) : `${score.home} - ${score.away}`;
+    const statusLabel = match.matchIsFinished ? "FT" : "Upcoming";
+    const footer = mode === "results" ? venueText(match) : formatDate(match.matchDateTimeUTC || match.matchDateTime);
+
+    return `
+      <div class="football-board-row">
+        <div class="football-board-team football-board-home">
+          <span class="football-board-name">${escapeHtml(homeName)}</span>
+          <img src="${escapeHtml(logoForTeam(match.team1 || {}))}" alt="${escapeHtml(homeName)} logo" class="football-board-logo" loading="lazy" />
+        </div>
+        <div class="football-board-center">
+          <div class="football-board-main">${escapeHtml(centerLabel)}</div>
+          <div class="football-board-status">${escapeHtml(statusLabel)}</div>
+        </div>
+        <div class="football-board-team football-board-away">
+          <img src="${escapeHtml(logoForTeam(match.team2 || {}))}" alt="${escapeHtml(awayName)} logo" class="football-board-logo" loading="lazy" />
+          <span class="football-board-name">${escapeHtml(awayName)}</span>
+        </div>
+        <div class="football-board-footer">${escapeHtml(footer)}</div>
+      </div>
+    `;
+  }).join("");
 
   return `
-    <article class="football-match-card">
-      <header class="football-match-head">
-        <strong>${finished ? "Results" : "Fixture"}</strong>
-        <span>›</span>
+    <article class="football-board">
+      <header class="football-board-header">
+        <div>
+          <p class="football-board-title mb-0">${escapeHtml(league)}</p>
+          <small class="text-muted">${escapeHtml(round)}</small>
+        </div>
       </header>
-      <p class="football-league-name">${escapeHtml(league)}</p>
-      <p class="football-match-date">${escapeHtml(dateLabel)}</p>
-      <div class="football-score-row">
-        <div class="football-team football-team-left">
-          <img src="${escapeHtml(logoForTeam(match.team1 || {}))}" alt="${escapeHtml(homeName)} logo" class="football-team-logo" loading="lazy" />
-          <span class="football-team-name">${escapeHtml(homeName)}</span>
-        </div>
-        <div class="football-center-score">
-          <span class="football-score-number">${escapeHtml(String(score.home))}</span>
-          <span class="football-score-dash">-</span>
-          <span class="football-score-number">${escapeHtml(String(score.away))}</span>
-        </div>
-        <div class="football-team football-team-right">
-          <span class="football-team-name">${escapeHtml(awayName)}</span>
-          <img src="${escapeHtml(logoForTeam(match.team2 || {}))}" alt="${escapeHtml(awayName)} logo" class="football-team-logo" loading="lazy" />
-        </div>
-      </div>
-      <div class="football-goals-row">
-        <span>${escapeHtml(homeScorers || "-")}</span>
-        <span>${finished ? "⚽" : "🗓️"}</span>
-        <span>${escapeHtml(awayScorers || "-")}</span>
-      </div>
-      <p class="football-venue">📍 ${escapeHtml(finished ? venueText(match) : `Kickoff ${formatDateTime(match.matchDateTimeUTC || match.matchDateTime)}`)}</p>
+      <div class="football-board-lines">${rows}</div>
     </article>
   `;
 }
 
 function renderFixtures(matches = []) {
   const upcoming = matches.filter((m) => !m.matchIsFinished).slice(0, 8);
-  if (!upcoming.length) {
-    fixturesWrap.innerHTML = '<p class="text-muted mb-0">No upcoming fixtures found.</p>';
-    return;
-  }
-  fixturesWrap.innerHTML = upcoming.map((m) => matchCard(m, false)).join("");
+  fixturesWrap.innerHTML = upcoming.length ? renderLeagueBoard(upcoming, "fixtures") : '<p class="text-muted mb-0">No upcoming fixtures found.</p>';
 }
 
 function renderResults(matches = []) {
   const played = matches.filter((m) => m.matchIsFinished).slice(0, 8);
-  if (!played.length) {
-    resultsWrap.innerHTML = '<p class="text-muted mb-0">No recent match data found.</p>';
-    return;
-  }
-  resultsWrap.innerHTML = played.map((m) => matchCard(m, true)).join("");
+  resultsWrap.innerHTML = played.length ? renderLeagueBoard(played, "results") : '<p class="text-muted mb-0">No recent match data found.</p>';
 }
 
 async function loadFootballDemo(authInfo) {

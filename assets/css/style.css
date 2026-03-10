@@ -602,3 +602,86 @@ body {
     align-items: center;
   }
 }
+
+.football-board {
+  background: #ffffff;
+  border: 1px solid #d8dee8;
+  border-radius: 0.8rem;
+  overflow: hidden;
+}
+
+.football-board-header {
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f8fafc;
+}
+
+.football-board-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.football-board-lines {
+  display: grid;
+}
+
+.football-board-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto minmax(220px, 1fr);
+  align-items: center;
+  gap: 1rem;
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.football-board-row:last-child {
+  border-bottom: 0;
+}
+
+.football-board-team {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.football-board-away {
+  justify-content: flex-end;
+}
+
+.football-board-logo {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
+.football-board-name {
+  font-size: 1.85rem;
+  font-weight: 500;
+}
+
+.football-board-center {
+  text-align: center;
+  min-width: 120px;
+}
+
+.football-board-main {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.football-board-status {
+  margin-top: 0.2rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: #1d4ed8;
+  font-weight: 700;
+}
+
+.football-board-footer {
+  grid-column: 1 / -1;
+  color: #6b7280;
+  font-size: 1rem;
+  text-align: center;
+  margin-top: -0.2rem;
+}
