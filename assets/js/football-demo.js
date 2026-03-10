@@ -24,9 +24,22 @@ const fallbackTeams = [
 ];
 
 const fallbackTable = [
-  { intRank: 1, strTeam: "Mamelodi Sundowns", intPlayed: 20, intWin: 15, intDraw: 3, intLoss: 2, intGoalsDifference: 24, intPoints: 48 },
-  { intRank: 2, strTeam: "Orlando Pirates", intPlayed: 20, intWin: 12, intDraw: 4, intLoss: 4, intGoalsDifference: 16, intPoints: 40 },
-  { intRank: 3, strTeam: "Stellenbosch FC", intPlayed: 20, intWin: 10, intDraw: 6, intLoss: 4, intGoalsDifference: 8, intPoints: 36 }
+  { intRank: 1, strTeam: "Mamelodi Sundowns", intPlayed: 30, intWin: 22, intDraw: 5, intLoss: 3, intGoalsDifference: 35, intPoints: 71 },
+  { intRank: 2, strTeam: "Orlando Pirates", intPlayed: 30, intWin: 19, intDraw: 6, intLoss: 5, intGoalsDifference: 25, intPoints: 63 },
+  { intRank: 3, strTeam: "Stellenbosch FC", intPlayed: 30, intWin: 16, intDraw: 8, intLoss: 6, intGoalsDifference: 13, intPoints: 56 },
+  { intRank: 4, strTeam: "SuperSport United", intPlayed: 30, intWin: 14, intDraw: 9, intLoss: 7, intGoalsDifference: 9, intPoints: 51 },
+  { intRank: 5, strTeam: "Cape Town City", intPlayed: 30, intWin: 14, intDraw: 7, intLoss: 9, intGoalsDifference: 4, intPoints: 49 },
+  { intRank: 6, strTeam: "Sekhukhune United", intPlayed: 30, intWin: 12, intDraw: 10, intLoss: 8, intGoalsDifference: 3, intPoints: 46 },
+  { intRank: 7, strTeam: "Amazulu FC", intPlayed: 30, intWin: 12, intDraw: 8, intLoss: 10, intGoalsDifference: 1, intPoints: 44 },
+  { intRank: 8, strTeam: "Kaizer Chiefs", intPlayed: 30, intWin: 11, intDraw: 10, intLoss: 9, intGoalsDifference: -1, intPoints: 43 },
+  { intRank: 9, strTeam: "Polokwane City", intPlayed: 30, intWin: 10, intDraw: 11, intLoss: 9, intGoalsDifference: -2, intPoints: 41 },
+  { intRank: 10, strTeam: "TS Galaxy", intPlayed: 30, intWin: 10, intDraw: 9, intLoss: 11, intGoalsDifference: -4, intPoints: 39 },
+  { intRank: 11, strTeam: "Golden Arrows", intPlayed: 30, intWin: 9, intDraw: 10, intLoss: 11, intGoalsDifference: -5, intPoints: 37 },
+  { intRank: 12, strTeam: "Richards Bay", intPlayed: 30, intWin: 9, intDraw: 8, intLoss: 13, intGoalsDifference: -10, intPoints: 35 },
+  { intRank: 13, strTeam: "Chippa United", intPlayed: 30, intWin: 8, intDraw: 10, intLoss: 12, intGoalsDifference: -12, intPoints: 34 },
+  { intRank: 14, strTeam: "Royal AM", intPlayed: 30, intWin: 8, intDraw: 7, intLoss: 15, intGoalsDifference: -16, intPoints: 31 },
+  { intRank: 15, strTeam: "Moroka Swallows", intPlayed: 30, intWin: 7, intDraw: 7, intLoss: 16, intGoalsDifference: -20, intPoints: 28 },
+  { intRank: 16, strTeam: "Cape Town Spurs", intPlayed: 30, intWin: 5, intDraw: 8, intLoss: 17, intGoalsDifference: -20, intPoints: 23 }
 ];
 
 const fallbackEvents = [
