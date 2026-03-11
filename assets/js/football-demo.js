@@ -145,7 +145,7 @@ function renderStandings(tableRows = [], teams = [], lookupPositions = {}) {
   const table = merged.length ? merged : tableRows;
   table.sort((a, b) => Number(a.intRank || 9999) - Number(b.intRank || 9999) || String(a.strTeam).localeCompare(String(b.strTeam)));
 
-  standingsBody.innerHTML = table.map((row) => `
+  standingsBody.innerHTML = table.slice(0, 5).map((row) => `
     <tr>
       <td>${escapeHtml(row.intRank >= 9999 ? "-" : row.intRank)}</td>
       <td>${escapeHtml(row.strTeam || "-")}</td>

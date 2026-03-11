@@ -754,3 +754,44 @@ body {
   font-size: 0.9rem;
   flex-wrap: wrap;
 }
+
+.sports-nav-menu .dropdown-menu {
+  max-height: 22rem;
+  overflow-y: auto;
+}
+
+.sports-dropend .dropdown-toggle::after {
+  float: right;
+  margin-top: 0.55rem;
+}
+
+.sports-team-logo {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.sports-event-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+  background: #fff;
+}
+
+.sports-event-teams {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+
+.sports-event-meta {
+  margin-top: 0.4rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  color: #64748b;
+  font-size: 0.85rem;
+}
