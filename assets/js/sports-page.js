@@ -3,11 +3,32 @@ const DEFAULT_SPORT = "Soccer";
 const DEFAULT_LEAGUE = "South African Premier Soccer League";
 const DEFAULT_LEAGUE_ID = "4802";
 
+const MANUAL_LEAGUES = {
+  Soccer: {
+    "South African Premier Soccer League": "4802",
+    "UEFA Champions League": "4480",
+    "English Premier League": "4328",
+    LaLiga: "4335"
+  },
+  Basketball: {
+    NBA: "4387"
+  },
+  Rugby: {
+    "United Rugby Championship": "4766"
+  },
+  Cricket: {
+    "Indian Premier League": "5090"
+  }
+};
+
 const leagueTitle = document.getElementById("leagueTitle");
 const leagueStatus = document.getElementById("leagueStatus");
 const standingsTitle = document.getElementById("standingsTitle");
 const standingsBody = document.getElementById("standingsBody");
 const fixturesList = document.getElementById("fixturesList");
+const leagueMeta = document.getElementById("leagueMeta");
+const leagueDescription = document.getElementById("leagueDescription");
+const leagueBadge = document.getElementById("leagueBadge");
 
 function escapeHtml(value = "") {
   const map = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" };
@@ -25,15 +46,36 @@ function parseQuery() {
   return {
     sport: params.get("sport") || DEFAULT_SPORT,
     league: params.get("league") || DEFAULT_LEAGUE,
-    leagueId: params.get("leagueId") || DEFAULT_LEAGUE_ID
+    leagueId: params.get("leagueId") || ""
   };
 }
 
+function resolveLeagueId(sport, league, requestedId) {
+  if (requestedId) return requestedId;
+  return MANUAL_LEAGUES?.[sport]?.[league] || DEFAULT_LEAGUE_ID;
+}
 
 async function fetchLeagueTeams(leagueName) {
   const resp = await fetchSportsDb(`/search_all_teams.php?l=${encodeURIComponent(leagueName)}`);
   const teams = Array.isArray(resp?.teams) ? resp.teams : [];
   return new Set(teams.map((team) => String(team.strTeam || "").trim().toLowerCase()).filter(Boolean));
+}
+
+function renderLeagueInfo(leagueData, sport, league) {
+  const name = leagueData?.strLeague || league;
+  const country = leagueData?.strCountry || "International";
+  const formed = leagueData?.intFormedYear ? ` • Founded ${leagueData.intFormedYear}` : "";
+  leagueMeta.textContent = `${sport} • ${name} • ${country}${formed}`;
+  leagueDescription.textContent = leagueData?.strDescriptionEN || `Live table and fixtures for ${name}.`;
+
+  const badgeUrl = leagueData?.strBadge || leagueData?.strLogo || "";
+  if (badgeUrl) {
+    leagueBadge.src = badgeUrl;
+    leagueBadge.classList.remove("d-none");
+  } else {
+    leagueBadge.removeAttribute("src");
+    leagueBadge.classList.add("d-none");
+  }
 }
 
 function renderStandings(rows = []) {
@@ -86,28 +128,23 @@ function renderFixtures(events = []) {
   }).join("");
 }
 
-async function resolveLeagueId(sport, leagueName, leagueId) {
-  if (leagueId) return leagueId;
-  const resp = await fetchSportsDb(`/search_all_leagues.php?s=${encodeURIComponent(sport)}`);
-  const leagues = Array.isArray(resp?.countrys) ? resp.countrys : [];
-  const match = leagues.find((league) => (league.strLeague || "").toLowerCase() === leagueName.toLowerCase());
-  return match?.idLeague || DEFAULT_LEAGUE_ID;
-}
-
 async function loadSportsPage() {
   const { sport, league, leagueId } = parseQuery();
+  const resolvedLeagueId = resolveLeagueId(sport, league, leagueId);
+
   leagueTitle.textContent = `${sport} • ${league}`;
   standingsTitle.textContent = `Top 5 on ${league}`;
-  leagueStatus.textContent = "Loading table and upcoming fixtures...";
+  leagueStatus.textContent = "Loading table, league information and upcoming fixtures...";
 
   try {
-    const resolvedLeagueId = await resolveLeagueId(sport, league, leagueId);
-    const [tableResp, eventsResp, leagueTeams] = await Promise.all([
+    const [leagueResp, tableResp, eventsResp, leagueTeams] = await Promise.all([
+      fetchSportsDb(`/lookupleague.php?id=${resolvedLeagueId}`),
       fetchSportsDb(`/lookuptable.php?l=${resolvedLeagueId}`),
       fetchSportsDb(`/eventsnextleague.php?id=${resolvedLeagueId}`),
       fetchLeagueTeams(league)
     ]);
 
+    const leagueData = Array.isArray(leagueResp?.leagues) ? leagueResp.leagues[0] : null;
     const table = Array.isArray(tableResp?.table) ? tableResp.table : [];
     const events = Array.isArray(eventsResp?.events) ? eventsResp.events : [];
     const filteredEvents = leagueTeams.size
@@ -118,10 +155,12 @@ async function loadSportsPage() {
       })
       : events;
 
+    renderLeagueInfo(leagueData, sport, league);
     renderStandings(table);
     renderFixtures(filteredEvents);
-    leagueStatus.textContent = `Loaded ${table.length} standings rows and ${filteredEvents.length} scheduled matches.`;
+    leagueStatus.textContent = `Loaded ${table.length} standings rows and ${filteredEvents.length} scheduled matches for ${league}.`;
   } catch (error) {
+    renderLeagueInfo(null, sport, league);
     renderStandings([]);
     renderFixtures([]);
     leagueStatus.textContent = `Unable to load live data (${error.message}).`;
