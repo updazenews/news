@@ -805,3 +805,25 @@ body {
   border: 1px solid #e2e8f0;
   padding: 0.35rem;
 }
+
+.team-link-btn {
+  text-decoration: none;
+  color: var(--brand-dark);
+  font-weight: 600;
+}
+
+.team-link-btn:hover,
+.team-link-btn:focus {
+  color: var(--brand-primary);
+  text-decoration: underline;
+}
+
+.sports-team-detail-badge {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  border-radius: 0.85rem;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  padding: 0.4rem;
+}

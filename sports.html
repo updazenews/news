@@ -104,6 +104,34 @@
           </section>
         </div>
       </div>
+
+      <section class="card border-0 shadow-sm mt-4">
+        <div class="card-body">
+          <h2 class="h5 mb-3">Team Details</h2>
+          <p id="teamInfoStatus" class="text-muted mb-3">Click a team in the table to view full team information, league, upcoming matches, and previous 5 results.</p>
+          <div id="teamInfoPanel" class="d-none">
+            <div class="d-flex align-items-center gap-3 mb-3">
+              <img id="teamBadge" class="sports-team-detail-badge" alt="Team badge" loading="lazy" />
+              <div>
+                <h3 id="teamName" class="h5 mb-1">Team</h3>
+                <p id="teamLeague" class="mb-0 text-muted small">League</p>
+              </div>
+            </div>
+            <div id="teamMeta" class="small text-muted mb-3"></div>
+
+            <div class="row g-3">
+              <div class="col-12 col-lg-6">
+                <h4 class="h6 mb-2">Scheduled Matches</h4>
+                <div id="teamUpcomingList" class="d-grid gap-2"></div>
+              </div>
+              <div class="col-12 col-lg-6">
+                <h4 class="h6 mb-2">Previous 5 Results</h4>
+                <div id="teamRecentList" class="d-grid gap-2"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
     </section>
   </main>
 

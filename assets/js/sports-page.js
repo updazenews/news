@@ -30,6 +30,17 @@ const leagueMeta = document.getElementById("leagueMeta");
 const leagueDescription = document.getElementById("leagueDescription");
 const leagueBadge = document.getElementById("leagueBadge");
 
+const teamInfoStatus = document.getElementById("teamInfoStatus");
+const teamInfoPanel = document.getElementById("teamInfoPanel");
+const teamBadge = document.getElementById("teamBadge");
+const teamName = document.getElementById("teamName");
+const teamLeague = document.getElementById("teamLeague");
+const teamMeta = document.getElementById("teamMeta");
+const teamUpcomingList = document.getElementById("teamUpcomingList");
+const teamRecentList = document.getElementById("teamRecentList");
+
+let leagueTeams = [];
+
 function escapeHtml(value = "") {
   const map = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" };
   return String(value).replace(/[&<>"']/g, (char) => map[char]);
@@ -57,8 +68,7 @@ function resolveLeagueId(sport, league, requestedId) {
 
 async function fetchLeagueTeams(leagueName) {
   const resp = await fetchSportsDb(`/search_all_teams.php?l=${encodeURIComponent(leagueName)}`);
-  const teams = Array.isArray(resp?.teams) ? resp.teams : [];
-  return new Set(teams.map((team) => String(team.strTeam || "").trim().toLowerCase()).filter(Boolean));
+  return Array.isArray(resp?.teams) ? resp.teams : [];
 }
 
 function renderLeagueInfo(leagueData, sport, league) {
@@ -78,6 +88,12 @@ function renderLeagueInfo(leagueData, sport, league) {
   }
 }
 
+function findTeamIdByName(name = "") {
+  const normalized = String(name).trim().toLowerCase();
+  const match = leagueTeams.find((team) => String(team.strTeam || "").trim().toLowerCase() === normalized);
+  return match?.idTeam || "";
+}
+
 function renderStandings(rows = []) {
   if (!rows.length) {
     standingsBody.innerHTML = '<tr><td colspan="8" class="text-muted">Standings unavailable for this league.</td></tr>';
@@ -89,18 +105,34 @@ function renderStandings(rows = []) {
     .sort((a, b) => Number(a.intRank || 9999) - Number(b.intRank || 9999))
     .slice(0, 5);
 
-  standingsBody.innerHTML = sorted.map((row) => `
-    <tr>
-      <td>${escapeHtml(row.intRank || "-")}</td>
-      <td class="d-flex align-items-center gap-2"><img class="sports-team-logo" src="${escapeHtml(row.strBadge || "")}" alt="" onerror="this.style.display='none'" />${escapeHtml(row.strTeam || "-")}</td>
-      <td>${escapeHtml(row.intPlayed || "-")}</td>
-      <td>${escapeHtml(row.intWin || "-")}</td>
-      <td>${escapeHtml(row.intDraw || "-")}</td>
-      <td>${escapeHtml(row.intLoss || "-")}</td>
-      <td>${escapeHtml(row.intGoalsDifference || "-")}</td>
-      <td><strong>${escapeHtml(row.intPoints || "-")}</strong></td>
-    </tr>
-  `).join("");
+  standingsBody.innerHTML = sorted.map((row) => {
+    const teamId = row.idTeam || findTeamIdByName(row.strTeam);
+    return `
+      <tr>
+        <td>${escapeHtml(row.intRank || "-")}</td>
+        <td>
+          <button class="btn btn-link p-0 text-start team-link-btn d-inline-flex align-items-center gap-2" data-team-id="${escapeHtml(teamId)}" data-team-name="${escapeHtml(row.strTeam || "")}">
+            <img class="sports-team-logo" src="${escapeHtml(row.strBadge || "")}" alt="" onerror="this.style.display='none'" />
+            <span>${escapeHtml(row.strTeam || "-")}</span>
+          </button>
+        </td>
+        <td>${escapeHtml(row.intPlayed || "-")}</td>
+        <td>${escapeHtml(row.intWin || "-")}</td>
+        <td>${escapeHtml(row.intDraw || "-")}</td>
+        <td>${escapeHtml(row.intLoss || "-")}</td>
+        <td>${escapeHtml(row.intGoalsDifference || "-")}</td>
+        <td><strong>${escapeHtml(row.intPoints || "-")}</strong></td>
+      </tr>
+    `;
+  }).join("");
+
+  standingsBody.querySelectorAll(".team-link-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const id = btn.dataset.teamId || "";
+      const name = btn.dataset.teamName || "";
+      await loadTeamDetails(id, name);
+    });
+  });
 }
 
 function renderFixtures(events = []) {
@@ -115,17 +147,73 @@ function renderFixtures(events = []) {
     return da - db;
   });
 
-  fixturesList.innerHTML = sorted.slice(0, 10).map((event) => {
-    const home = event.strHomeTeam || "Home";
-    const away = event.strAwayTeam || "Away";
-    const when = event.dateEvent ? `${event.dateEvent} ${event.strTime || ""}`.trim() : "Date TBC";
-    return `
-      <article class="sports-event-card">
-        <div class="sports-event-teams"><span>${escapeHtml(home)}</span><strong>vs</strong><span>${escapeHtml(away)}</span></div>
-        <div class="sports-event-meta"><span>${escapeHtml(when)}</span><span>${escapeHtml(event.strVenue || "Venue TBC")}</span></div>
-      </article>
-    `;
-  }).join("");
+  fixturesList.innerHTML = sorted.slice(0, 10).map((event) => renderEventCard(event)).join("");
+}
+
+function renderEventCard(event = {}) {
+  const home = event.strHomeTeam || "Home";
+  const away = event.strAwayTeam || "Away";
+  const when = event.dateEvent ? `${event.dateEvent} ${event.strTime || ""}`.trim() : "Date TBC";
+  const score = event.intHomeScore !== null && event.intHomeScore !== "" && event.intAwayScore !== null && event.intAwayScore !== ""
+    ? `${event.intHomeScore} - ${event.intAwayScore}`
+    : "vs";
+
+  return `
+    <article class="sports-event-card">
+      <div class="sports-event-teams"><span>${escapeHtml(home)}</span><strong>${escapeHtml(score)}</strong><span>${escapeHtml(away)}</span></div>
+      <div class="sports-event-meta"><span>${escapeHtml(when)}</span><span>${escapeHtml(event.strVenue || "Venue TBC")}</span></div>
+    </article>
+  `;
+}
+
+async function loadTeamDetails(teamId, fallbackName) {
+  teamInfoStatus.textContent = `Loading team details for ${fallbackName || "team"}...`;
+  teamInfoPanel.classList.add("d-none");
+
+  try {
+    const resolvedTeamId = teamId || findTeamIdByName(fallbackName);
+    if (!resolvedTeamId) throw new Error("Missing team ID");
+
+    const [teamResp, nextResp, lastResp] = await Promise.all([
+      fetchSportsDb(`/lookupteam.php?id=${resolvedTeamId}`),
+      fetchSportsDb(`/eventsnext.php?id=${resolvedTeamId}`),
+      fetchSportsDb(`/eventslast.php?id=${resolvedTeamId}`)
+    ]);
+
+    const team = Array.isArray(teamResp?.teams) ? teamResp.teams[0] : null;
+    const upcoming = Array.isArray(nextResp?.events) ? nextResp.events.slice(0, 5) : [];
+    const recent = Array.isArray(lastResp?.results) ? lastResp.results.slice(0, 5) : [];
+
+    teamName.textContent = team?.strTeam || fallbackName || "Unknown Team";
+    teamLeague.textContent = `${team?.strSport || "Sport"} • ${team?.strLeague || "League"}`;
+    teamMeta.textContent = [
+      team?.strCountry ? `Country: ${team.strCountry}` : "",
+      team?.intFormedYear ? `Formed: ${team.intFormedYear}` : "",
+      team?.strStadium ? `Stadium: ${team.strStadium}` : ""
+    ].filter(Boolean).join(" • ");
+
+    if (team?.strBadge) {
+      teamBadge.src = team.strBadge;
+      teamBadge.classList.remove("d-none");
+    } else {
+      teamBadge.removeAttribute("src");
+      teamBadge.classList.add("d-none");
+    }
+
+    teamUpcomingList.innerHTML = upcoming.length
+      ? upcoming.map((event) => renderEventCard(event)).join("")
+      : '<p class="text-muted mb-0">No scheduled matches found.</p>';
+
+    teamRecentList.innerHTML = recent.length
+      ? recent.map((event) => renderEventCard(event)).join("")
+      : '<p class="text-muted mb-0">No recent results found.</p>';
+
+    teamInfoStatus.textContent = `Showing full details for ${team?.strTeam || fallbackName}.`;
+    teamInfoPanel.classList.remove("d-none");
+  } catch (error) {
+    teamInfoStatus.textContent = `Unable to load team details (${error.message}).`;
+    teamInfoPanel.classList.add("d-none");
+  }
 }
 
 async function loadSportsPage() {
@@ -137,28 +225,31 @@ async function loadSportsPage() {
   leagueStatus.textContent = "Loading table, league information and upcoming fixtures...";
 
   try {
-    const [leagueResp, tableResp, eventsResp, leagueTeams] = await Promise.all([
+    const [leagueResp, tableResp, eventsResp, teams] = await Promise.all([
       fetchSportsDb(`/lookupleague.php?id=${resolvedLeagueId}`),
       fetchSportsDb(`/lookuptable.php?l=${resolvedLeagueId}`),
       fetchSportsDb(`/eventsnextleague.php?id=${resolvedLeagueId}`),
       fetchLeagueTeams(league)
     ]);
 
+    leagueTeams = teams;
+    const leagueTeamSet = new Set(leagueTeams.map((team) => String(team.strTeam || "").trim().toLowerCase()).filter(Boolean));
+
     const leagueData = Array.isArray(leagueResp?.leagues) ? leagueResp.leagues[0] : null;
     const table = Array.isArray(tableResp?.table) ? tableResp.table : [];
     const events = Array.isArray(eventsResp?.events) ? eventsResp.events : [];
-    const filteredEvents = leagueTeams.size
+    const filteredEvents = leagueTeamSet.size
       ? events.filter((event) => {
         const home = String(event.strHomeTeam || "").trim().toLowerCase();
         const away = String(event.strAwayTeam || "").trim().toLowerCase();
-        return leagueTeams.has(home) && leagueTeams.has(away);
+        return leagueTeamSet.has(home) && leagueTeamSet.has(away);
       })
       : events;
 
     renderLeagueInfo(leagueData, sport, league);
     renderStandings(table);
     renderFixtures(filteredEvents);
-    leagueStatus.textContent = `Loaded ${table.length} standings rows and ${filteredEvents.length} scheduled matches for ${league}.`;
+    leagueStatus.textContent = `Loaded ${table.length} standings rows and ${filteredEvents.length} scheduled matches for ${league}. Click a team for full details.`;
   } catch (error) {
     renderLeagueInfo(null, sport, league);
     renderStandings([]);
