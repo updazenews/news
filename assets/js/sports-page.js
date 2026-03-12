@@ -40,6 +40,7 @@ const teamUpcomingList = document.getElementById("teamUpcomingList");
 const teamRecentList = document.getElementById("teamRecentList");
 
 let leagueTeams = [];
+let currentLeagueId = DEFAULT_LEAGUE_ID;
 
 function escapeHtml(value = "") {
   const map = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" };
@@ -174,33 +175,38 @@ async function loadTeamDetails(teamId, fallbackName) {
     const resolvedTeamId = teamId || findTeamIdByName(fallbackName);
     if (!resolvedTeamId) throw new Error("Missing team ID");
 
-    const [teamResp, nextResp, lastResp] = await Promise.all([
+    const [teamResp, leagueNextResp, leaguePastResp] = await Promise.all([
       fetchSportsDb(`/lookupteam.php?id=${resolvedTeamId}`),
-      fetchSportsDb(`/eventsnext.php?id=${resolvedTeamId}`),
-      fetchSportsDb(`/eventslast.php?id=${resolvedTeamId}`)
+      fetchSportsDb(`/eventsnextleague.php?id=${currentLeagueId}`),
+      fetchSportsDb(`/eventspastleague.php?id=${currentLeagueId}`)
     ]);
 
     const team = Array.isArray(teamResp?.teams) ? teamResp.teams[0] : null;
     const selectedTeamName = String(team?.strTeam || fallbackName || "").trim().toLowerCase();
-    const selectedTeamId = String(team?.idTeam || resolvedTeamId || "").trim();
 
     const eventBelongsToSelectedTeam = (event = {}) => {
       const homeName = String(event.strHomeTeam || "").trim().toLowerCase();
       const awayName = String(event.strAwayTeam || "").trim().toLowerCase();
-      const homeId = String(event.idHomeTeam || "").trim();
-      const awayId = String(event.idAwayTeam || "").trim();
-
-      if (selectedTeamId && (homeId === selectedTeamId || awayId === selectedTeamId)) return true;
       if (!selectedTeamName) return false;
       return homeName === selectedTeamName || awayName === selectedTeamName;
     };
 
-    const upcoming = (Array.isArray(nextResp?.events) ? nextResp.events : [])
+    const upcoming = (Array.isArray(leagueNextResp?.events) ? leagueNextResp.events : [])
       .filter(eventBelongsToSelectedTeam)
+      .sort((a, b) => {
+        const da = new Date(`${a.dateEvent || ""}T${a.strTime || "00:00:00"}`).getTime() || 0;
+        const db = new Date(`${b.dateEvent || ""}T${b.strTime || "00:00:00"}`).getTime() || 0;
+        return da - db;
+      })
       .slice(0, 5);
 
-    const recent = (Array.isArray(lastResp?.results) ? lastResp.results : [])
+    const recent = (Array.isArray(leaguePastResp?.events) ? leaguePastResp.events : [])
       .filter(eventBelongsToSelectedTeam)
+      .sort((a, b) => {
+        const da = new Date(`${a.dateEvent || ""}T${a.strTime || "00:00:00"}`).getTime() || 0;
+        const db = new Date(`${b.dateEvent || ""}T${b.strTime || "00:00:00"}`).getTime() || 0;
+        return db - da;
+      })
       .slice(0, 5);
 
     teamName.textContent = team?.strTeam || fallbackName || "Unknown Team";
@@ -238,6 +244,7 @@ async function loadTeamDetails(teamId, fallbackName) {
 async function loadSportsPage() {
   const { sport, league, leagueId } = parseQuery();
   const resolvedLeagueId = resolveLeagueId(sport, league, leagueId);
+  currentLeagueId = resolvedLeagueId;
 
   leagueTitle.textContent = `${sport} • ${league}`;
   standingsTitle.textContent = `Top 5 on ${league}`;
