@@ -29,6 +29,13 @@ function parseQuery() {
   };
 }
 
+
+async function fetchLeagueTeams(leagueName) {
+  const resp = await fetchSportsDb(`/search_all_teams.php?l=${encodeURIComponent(leagueName)}`);
+  const teams = Array.isArray(resp?.teams) ? resp.teams : [];
+  return new Set(teams.map((team) => String(team.strTeam || "").trim().toLowerCase()).filter(Boolean));
+}
+
 function renderStandings(rows = []) {
   if (!rows.length) {
     standingsBody.innerHTML = '<tr><td colspan="8" class="text-muted">Standings unavailable for this league.</td></tr>';
@@ -95,17 +102,25 @@ async function loadSportsPage() {
 
   try {
     const resolvedLeagueId = await resolveLeagueId(sport, league, leagueId);
-    const [tableResp, eventsResp] = await Promise.all([
+    const [tableResp, eventsResp, leagueTeams] = await Promise.all([
       fetchSportsDb(`/lookuptable.php?l=${resolvedLeagueId}`),
-      fetchSportsDb(`/eventsnextleague.php?id=${resolvedLeagueId}`)
+      fetchSportsDb(`/eventsnextleague.php?id=${resolvedLeagueId}`),
+      fetchLeagueTeams(league)
     ]);
 
     const table = Array.isArray(tableResp?.table) ? tableResp.table : [];
     const events = Array.isArray(eventsResp?.events) ? eventsResp.events : [];
+    const filteredEvents = leagueTeams.size
+      ? events.filter((event) => {
+        const home = String(event.strHomeTeam || "").trim().toLowerCase();
+        const away = String(event.strAwayTeam || "").trim().toLowerCase();
+        return leagueTeams.has(home) && leagueTeams.has(away);
+      })
+      : events;
 
     renderStandings(table);
-    renderFixtures(events);
-    leagueStatus.textContent = `Loaded ${table.length} standings rows and ${events.length} scheduled matches.`;
+    renderFixtures(filteredEvents);
+    leagueStatus.textContent = `Loaded ${table.length} standings rows and ${filteredEvents.length} scheduled matches.`;
   } catch (error) {
     renderStandings([]);
     renderFixtures([]);
