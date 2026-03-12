@@ -181,8 +181,27 @@ async function loadTeamDetails(teamId, fallbackName) {
     ]);
 
     const team = Array.isArray(teamResp?.teams) ? teamResp.teams[0] : null;
-    const upcoming = Array.isArray(nextResp?.events) ? nextResp.events.slice(0, 5) : [];
-    const recent = Array.isArray(lastResp?.results) ? lastResp.results.slice(0, 5) : [];
+    const selectedTeamName = String(team?.strTeam || fallbackName || "").trim().toLowerCase();
+    const selectedTeamId = String(team?.idTeam || resolvedTeamId || "").trim();
+
+    const eventBelongsToSelectedTeam = (event = {}) => {
+      const homeName = String(event.strHomeTeam || "").trim().toLowerCase();
+      const awayName = String(event.strAwayTeam || "").trim().toLowerCase();
+      const homeId = String(event.idHomeTeam || "").trim();
+      const awayId = String(event.idAwayTeam || "").trim();
+
+      if (selectedTeamId && (homeId === selectedTeamId || awayId === selectedTeamId)) return true;
+      if (!selectedTeamName) return false;
+      return homeName === selectedTeamName || awayName === selectedTeamName;
+    };
+
+    const upcoming = (Array.isArray(nextResp?.events) ? nextResp.events : [])
+      .filter(eventBelongsToSelectedTeam)
+      .slice(0, 5);
+
+    const recent = (Array.isArray(lastResp?.results) ? lastResp.results : [])
+      .filter(eventBelongsToSelectedTeam)
+      .slice(0, 5);
 
     teamName.textContent = team?.strTeam || fallbackName || "Unknown Team";
     teamLeague.textContent = `${team?.strSport || "Sport"} • ${team?.strLeague || "League"}`;
