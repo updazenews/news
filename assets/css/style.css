@@ -827,3 +827,18 @@ body {
   border: 1px solid #e2e8f0;
   padding: 0.4rem;
 }
+
+
+.article-quote {
+  margin: 1rem 0;
+  padding: 0.85rem 1rem;
+  border-left: 4px solid var(--brand-primary);
+  background: #f1f7fd;
+  border-radius: 0.35rem;
+  color: #1f2937;
+  font-style: italic;
+}
+
+.article-quote p:last-child {
+  margin-bottom: 0;
+}

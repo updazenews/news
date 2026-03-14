@@ -56,10 +56,20 @@ function renderFormattedContent(rawContent = "") {
   let html = "";
   let inUl = false;
   let inOl = false;
+  let inBlockquote = false;
 
   const closeLists = () => {
     if (inUl) { html += "</ul>"; inUl = false; }
     if (inOl) { html += "</ol>"; inOl = false; }
+  };
+
+  const closeBlockquote = () => {
+    if (inBlockquote) { html += "</blockquote>"; inBlockquote = false; }
+  };
+
+  const closeAllStructures = () => {
+    closeLists();
+    closeBlockquote();
   };
 
   for (let i = 0; i < lines.length; i += 1) {
@@ -67,12 +77,12 @@ function renderFormattedContent(rawContent = "") {
     const trimmed = line.trim();
 
     if (!trimmed) {
-      closeLists();
+      closeAllStructures();
       continue;
     }
 
     if (trimmed.includes("|") && i + 1 < lines.length && isTableDividerRow(lines[i + 1])) {
-      closeLists();
+      closeAllStructures();
       const tableLines = [line, lines[i + 1]];
       i += 2;
       while (i < lines.length && lines[i].trim().includes("|")) {
@@ -85,16 +95,23 @@ function renderFormattedContent(rawContent = "") {
       continue;
     }
 
-    if (/^###\s+/.test(trimmed)) { closeLists(); html += `<h3>${formatInlineMarkdown(escapeHtml(trimmed.replace(/^###\s+/, "")))}</h3>`; continue; }
-    if (/^##\s+/.test(trimmed)) { closeLists(); html += `<h2>${formatInlineMarkdown(escapeHtml(trimmed.replace(/^##\s+/, "")))}</h2>`; continue; }
-    if (/^[-*]\s+/.test(trimmed)) { if (inOl) { html += "</ol>"; inOl = false; } if (!inUl) { html += "<ul>"; inUl = true; } html += `<li>${formatInlineMarkdown(escapeHtml(trimmed.replace(/^[-*]\s+/, "")))}</li>`; continue; }
-    if (/^\d+\.\s+/.test(trimmed)) { if (inUl) { html += "</ul>"; inUl = false; } if (!inOl) { html += "<ol>"; inOl = true; } html += `<li>${formatInlineMarkdown(escapeHtml(trimmed.replace(/^\d+\.\s+/, "")))}</li>`; continue; }
+    if (/^###\s+/.test(trimmed)) { closeAllStructures(); html += `<h3>${formatInlineMarkdown(escapeHtml(trimmed.replace(/^###\s+/, "")))}</h3>`; continue; }
+    if (/^##\s+/.test(trimmed)) { closeAllStructures(); html += `<h2>${formatInlineMarkdown(escapeHtml(trimmed.replace(/^##\s+/, "")))}</h2>`; continue; }
+    if (/^[-*]\s+/.test(trimmed)) { closeBlockquote(); if (inOl) { html += "</ol>"; inOl = false; } if (!inUl) { html += "<ul>"; inUl = true; } html += `<li>${formatInlineMarkdown(escapeHtml(trimmed.replace(/^[-*]\s+/, "")))}</li>`; continue; }
+    if (/^\d+\.\s+/.test(trimmed)) { closeBlockquote(); if (inUl) { html += "</ul>"; inUl = false; } if (!inOl) { html += "<ol>"; inOl = true; } html += `<li>${formatInlineMarkdown(escapeHtml(trimmed.replace(/^\d+\.\s+/, "")))}</li>`; continue; }
 
-    closeLists();
+    if (/^>\s?/.test(trimmed)) {
+      closeLists();
+      if (!inBlockquote) { html += "<blockquote class=\"article-quote\">"; inBlockquote = true; }
+      html += `<p>${formatInlineMarkdown(escapeHtml(trimmed.replace(/^>\s?/, "")))}</p>`;
+      continue;
+    }
+
+    closeAllStructures();
     html += `<p>${formatInlineMarkdown(escapeHtml(trimmed))}</p>`;
   }
 
-  closeLists();
+  closeAllStructures();
   return html;
 }
 
