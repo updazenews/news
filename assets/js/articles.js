@@ -110,7 +110,7 @@ export function renderArticleCards(containerId, articles) {
             <p class="text-uppercase text-primary small fw-semibold mb-2">${article.category || "general"}</p>
             <h3 class="h5">${article.title}</h3>
             <p class="text-muted">${article.excerpt || "Read the latest update from Updaze News."}</p>
-            <p class="article-meta mt-auto mb-3">${article.author || "Updaze Desk"} • ${dateValue.toLocaleDateString()} • ${getArticleViewCount(article)} views</p>
+            <p class="article-meta mt-auto mb-3">${article.author || "Updaze Desk"} • ${dateValue.toLocaleDateString()}</p>
             <a class="btn btn-sm btn-outline-primary" href="article.html?slug=${article.slug}">Read Article</a>
           </div>
         </div>

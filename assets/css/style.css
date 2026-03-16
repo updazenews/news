@@ -842,3 +842,11 @@ body {
 .article-quote p:last-child {
   margin-bottom: 0;
 }
+
+
+.article-inline-image {
+  display: block;
+  margin: 1rem auto;
+  max-height: 480px;
+  width: auto;
+}

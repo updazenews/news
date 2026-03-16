@@ -1,4 +1,4 @@
-import { fetchArticleBySlug, fetchArticles, fetchTopViewedArticles, getArticleViewCount, incrementArticleView, renderArticleCards } from "./articles.js";
+import { fetchArticleBySlug, fetchArticles, fetchTopViewedArticles, incrementArticleView, renderArticleCards } from "./articles.js";
 
 const params = new URLSearchParams(window.location.search);
 
@@ -15,7 +15,10 @@ function escapeHtml(value = "") {
 }
 
 function formatInlineMarkdown(text = "") {
-  return text.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/\*(.+?)\*/g, "<em>$1</em>");
+  return text
+    .replace(/!\[(.*?)\]\((https?:\/\/[^\s)]+)\)/g, (_m, alt, src) => `<img src="${src}" alt="${alt}" class="img-fluid rounded article-inline-image" loading="lazy" />`)
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.+?)\*/g, "<em>$1</em>");
 }
 
 function splitTableRow(row = "") {
@@ -279,7 +282,7 @@ async function initArticlePage() {
   document.getElementById("articleTitle").textContent = article.title;
   document.getElementById("articleCategory").textContent = article.category || "general";
   const publishedDate = new Date(article.publishedAt?.seconds ? article.publishedAt.seconds * 1000 : article.publishedAt || Date.now()).toLocaleString();
-  document.getElementById("articleMeta").textContent = `${article.author || "Updaze Desk"} • ${publishedDate} • ${getArticleViewCount(article)} views`;
+  document.getElementById("articleMeta").textContent = `${article.author || "Updaze Desk"} • ${publishedDate}`;
   articleBody.innerHTML = renderFormattedContent(article.content || "");
 
   if (article.imageUrl) { const image = document.getElementById("articleImage"); image.src = article.imageUrl; image.classList.remove("d-none"); }
