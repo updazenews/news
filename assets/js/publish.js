@@ -357,8 +357,18 @@ async function handleDemoGithubUpload() {
 
   const token = await fetchGithubUploadToken();
   const html = buildStaticArticleHtml(article, slug);
-  const apiUrl = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/contents/${targetPath.split("/").map(encodeURIComponent).join("/")}`;
+  const encodedPath = targetPath.split("/").map(encodeURIComponent).join("/");
+  const repoApiBase = `https://api.github.com/repos/${owner}/${repo}`;
+  const apiUrl = `${repoApiBase}/contents/${encodedPath}`;
   const headers = { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" };
+
+  const repoCheck = await fetch(repoApiBase, { headers });
+  if (!repoCheck.ok) {
+    if (repoCheck.status === 404) {
+      throw new Error(`Repository "${owner}/${repo}" was not found for this token. Verify owner/repo and ensure token has repository access.`);
+    }
+    throw new Error(`GitHub repository check failed: ${repoCheck.status} ${repoCheck.statusText}`);
+  }
 
   let currentSha = "";
   const existing = await fetch(`${apiUrl}?ref=${encodeURIComponent(branch)}`, { headers });
@@ -382,6 +392,9 @@ async function handleDemoGithubUpload() {
 
   if (!uploadResponse.ok) {
     const failure = await uploadResponse.text();
+    if (uploadResponse.status === 404) {
+      throw new Error(`GitHub upload failed with 404. Confirm branch "${branch}" exists and token can write contents in ${owner}/${repo}. Raw response: ${failure}`);
+    }
     throw new Error(`GitHub upload failed: ${uploadResponse.status} ${failure}`);
   }
   const uploadPayload = await uploadResponse.json();
