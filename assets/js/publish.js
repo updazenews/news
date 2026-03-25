@@ -40,6 +40,9 @@ const viewsChart = document.getElementById("viewsChart");
 const adminLogsSection = document.getElementById("adminLogsSection");
 const adminLogsBody = document.getElementById("adminLogsBody");
 const adminLogsStatus = document.getElementById("adminLogsStatus");
+const demoDownloadBtn = document.getElementById("demoDownloadBtn");
+const demoGithubUploadBtn = document.getElementById("demoGithubUploadBtn");
+const demoGithubFields = document.getElementById("demoGithubFields");
 
 const editSlug = new URLSearchParams(window.location.search).get("edit");
 let editingArticleSlug = "";
@@ -199,6 +202,193 @@ function renderFormattedContent(rawContent = "") {
 
   closeAllStructures();
   return html;
+}
+
+function toIsoDate(value) {
+  if (!value) return new Date().toISOString();
+  if (typeof value.toDate === "function") return value.toDate().toISOString();
+  if (value.seconds) return new Date(value.seconds * 1000).toISOString();
+  return new Date(value).toISOString();
+}
+
+function buildStaticArticleHtml(article, slug) {
+  const siteUrl = "https://updaze-news.github.io";
+  const articleUrl = `${siteUrl}/articles/${encodeURIComponent(slug)}.html`;
+  const title = escapeHtml(article.title || "Untitled");
+  const excerpt = escapeHtml(article.excerpt || "Latest update from Updaze News.");
+  const author = escapeHtml(article.author || "Updaze Desk");
+  const category = escapeHtml((article.category || "general").toLowerCase());
+  const publishedIso = toIsoDate(article.publishedAt);
+  const updatedIso = toIsoDate(article.updatedAt);
+  const image = article.imageUrl || "https://updaze-news.github.io/assets/logo.png";
+  const safeImage = escapeHtml(image);
+  const canonical = escapeHtml(articleUrl);
+  const contentHtml = renderFormattedContent(article.content || "");
+  const caption = article.imageCaption ? `<p class="article-image-caption">${escapeHtml(article.imageCaption)}</p>` : "";
+  const featureImage = article.imageUrl ? `<img src="${safeImage}" alt="${title}" class="img-fluid rounded mb-2" loading="lazy" />${caption}` : "";
+  const video = article.videoUrl ? `<section class="my-4"><h2 class="h6 mb-2">Article Video</h2><div class="ratio ratio-16x9"><iframe src="${escapeHtml(article.videoUrl)}" title="Embedded article video" loading="lazy" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-presentation" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div></section>` : "";
+  const keywordContent = escapeHtml(`${category}, updaze news, breaking news`);
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "NewsArticle",
+    headline: article.title || "Untitled",
+    image: [image],
+    datePublished: publishedIso,
+    dateModified: updatedIso,
+    author: { "@type": "Person", name: article.author || "Updaze Desk" },
+    publisher: {
+      "@type": "Organization",
+      name: "Updaze News",
+      logo: { "@type": "ImageObject", url: "https://updaze-news.github.io/assets/logo.png" }
+    },
+    mainEntityOfPage: articleUrl,
+    description: article.excerpt || "Latest update from Updaze News."
+  };
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="google-adsense-account" content="ca-pub-5731928992880799" />
+  <title>${title} | Updaze News</title>
+  <meta name="description" content="${excerpt}" />
+  <meta name="author" content="${author}" />
+  <meta name="keywords" content="${keywordContent}" />
+  <link rel="canonical" href="${canonical}" />
+  <meta property="og:title" content="${title}" />
+  <meta property="og:description" content="${excerpt}" />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="${canonical}" />
+  <meta property="og:image" content="${safeImage}" />
+  <meta property="article:published_time" content="${publishedIso}" />
+  <meta property="article:modified_time" content="${updatedIso}" />
+  <meta property="article:author" content="${author}" />
+  <meta property="article:section" content="${category}" />
+  <meta property="article:tag" content="${category}" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="${title}" />
+  <meta name="twitter:description" content="${excerpt}" />
+  <meta name="twitter:image" content="${safeImage}" />
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5731928992880799" crossorigin="anonymous"></script>
+  <script type="application/ld+json">${JSON.stringify(jsonLd)}</script>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous" />
+  <link rel="stylesheet" href="../assets/css/style.css" />
+</head>
+<body>
+  <main class="main-content container-lg py-4">
+    <article>
+      <header class="mb-4">
+        <p class="text-uppercase text-primary fw-semibold mb-2">${category}</p>
+        <h1>${title}</h1>
+        <p class="article-meta mb-0">By ${author} • ${escapeHtml(new Date(publishedIso).toLocaleString())}</p>
+      </header>
+      ${featureImage}
+      <section class="fs-5 lh-lg">${contentHtml}</section>
+      ${video}
+    </article>
+  </main>
+</body>
+</html>`;
+}
+
+function collectDraftArticle() {
+  const title = document.getElementById("title").value.trim();
+  const slug = editingArticleSlug || slugify(title);
+  return {
+    slug,
+    article: {
+      title,
+      category: document.getElementById("category").value.trim(),
+      author: (authInfo?.profile?.displayName || authInfo?.user?.email || "Updaze Desk").trim(),
+      imageCaption: document.getElementById("imageCaption").value.trim(),
+      videoUrl: normalizeVideoEmbedUrl(document.getElementById("videoUrl")?.value?.trim() || ""),
+      excerpt: document.getElementById("excerpt").value.trim(),
+      content: document.getElementById("content").value.trim(),
+      imageUrl: ""
+    }
+  };
+}
+
+async function handleDemoDownload() {
+  const { slug, article } = collectDraftArticle();
+  if (!slug || !article.title || !article.content || !article.excerpt) {
+    publishMessage.className = "mt-3 mb-0 small text-danger";
+    publishMessage.textContent = "Fill in title, excerpt, and content before downloading static HTML.";
+    return;
+  }
+  const html = buildStaticArticleHtml(article, slug);
+  const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `${slug}.html`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(link.href);
+  publishMessage.className = "mt-3 mb-0 small text-success";
+  publishMessage.textContent = `Demo static file downloaded: ${slug}.html`;
+}
+
+async function fetchGithubUploadToken() {
+  const tokenSnap = await getDoc(doc(db, "tokens", "github_upload"));
+  if (!tokenSnap.exists()) throw new Error("Firestore token document tokens/github_upload not found.");
+  const token = `${tokenSnap.data()?.value || ""}`.trim();
+  if (!token) throw new Error("GitHub token in tokens/github_upload.value is empty.");
+  return token;
+}
+
+function toBase64Unicode(value = "") {
+  return btoa(unescape(encodeURIComponent(value)));
+}
+
+async function handleDemoGithubUpload() {
+  const { slug, article } = collectDraftArticle();
+  if (!slug || !article.title || !article.content || !article.excerpt) throw new Error("Fill in title, excerpt, and content before GitHub upload.");
+
+  const owner = document.getElementById("demoGithubOwner")?.value?.trim();
+  const repo = document.getElementById("demoGithubRepo")?.value?.trim();
+  const branch = document.getElementById("demoGithubBranch")?.value?.trim() || "main";
+  const targetPathInput = document.getElementById("demoGithubPath")?.value?.trim() || "articles/";
+  const normalizedPrefix = targetPathInput.replace(/^\/+/, "").replace(/\/?$/, "/");
+  if (!owner || !repo) throw new Error("GitHub owner and repository are required.");
+  const targetPath = `${normalizedPrefix}${slug}.html`;
+
+  const token = await fetchGithubUploadToken();
+  const html = buildStaticArticleHtml(article, slug);
+  const apiUrl = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/contents/${targetPath.split("/").map(encodeURIComponent).join("/")}`;
+  const headers = { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" };
+
+  let currentSha = "";
+  const existing = await fetch(`${apiUrl}?ref=${encodeURIComponent(branch)}`, { headers });
+  if (existing.ok) {
+    const payload = await existing.json();
+    currentSha = payload.sha || "";
+  } else if (existing.status !== 404) {
+    throw new Error(`GitHub lookup failed: ${existing.status} ${existing.statusText}`);
+  }
+
+  const uploadResponse = await fetch(apiUrl, {
+    method: "PUT",
+    headers: { ...headers, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      message: `demo: publish static news page for ${slug}`,
+      content: toBase64Unicode(html),
+      branch,
+      ...(currentSha ? { sha: currentSha } : {})
+    })
+  });
+
+  if (!uploadResponse.ok) {
+    const failure = await uploadResponse.text();
+    throw new Error(`GitHub upload failed: ${uploadResponse.status} ${failure}`);
+  }
+  const uploadPayload = await uploadResponse.json();
+  const url = uploadPayload?.content?.html_url || `https://github.com/${owner}/${repo}/blob/${branch}/${targetPath}`;
+  publishMessage.className = "mt-3 mb-0 small text-success";
+  publishMessage.textContent = `Demo upload complete: ${url}`;
+  await logAdminAction("github_demo_upload", `Uploaded ${targetPath} on ${owner}/${repo}@${branch}`);
 }
 
 
@@ -503,6 +693,13 @@ if (!authInfo) {
   if (manageUsersLink && canManageUsers(authInfo.role)) manageUsersLink.classList.remove("d-none");
   if (adminLogsLink && isSuperAdmin(authInfo.role)) adminLogsLink.classList.remove("d-none");
   if (footballDemoLink && isSuperAdmin(authInfo.role)) footballDemoLink.classList.remove("d-none");
+  if (demoDownloadBtn && (authInfo.role === "publisher" || authInfo.role === "super admin")) {
+    demoDownloadBtn.classList.remove("d-none");
+  }
+  if (demoGithubUploadBtn && demoGithubFields && (authInfo.role === "publisher" || authInfo.role === "super admin")) {
+    demoGithubUploadBtn.classList.remove("d-none");
+    demoGithubFields.classList.remove("d-none");
+  }
 
   if (form && editSlug) await loadArticleForEditing(editSlug, authInfo);
   if (publishedArticlesBody && publishedArticlesStatus) await loadPublishedArticles(authInfo);
@@ -549,6 +746,26 @@ document.getElementById("previewBtn")?.addEventListener("click", () => {
   const previewImage = file ? `<img src="${URL.createObjectURL(file)}" alt="Preview image" class="img-fluid rounded my-3" />${imageCaption ? `<p class="article-image-caption">${escapeHtml(imageCaption)}</p>` : ""}` : "";
   const previewVideo = embedVideoUrl ? `<div class="ratio ratio-16x9 my-3"><iframe src="${escapeHtml(embedVideoUrl)}" title="Article video preview" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>` : "";
   if (previewPane) previewPane.innerHTML = `<h3>${escapeHtml(title || "Untitled draft")}</h3><p class="text-muted">${escapeHtml(excerpt)}</p>${previewImage}${previewVideo}${renderFormattedContent(content)}`;
+});
+
+demoDownloadBtn?.addEventListener("click", async () => {
+  try {
+    await handleDemoDownload();
+  } catch (error) {
+    publishMessage.className = "mt-3 mb-0 small text-danger";
+    publishMessage.textContent = `Demo download failed: ${error.message}`;
+  }
+});
+
+demoGithubUploadBtn?.addEventListener("click", async () => {
+  publishMessage.className = "mt-3 mb-0 small text-muted";
+  publishMessage.textContent = "Uploading demo HTML to GitHub...";
+  try {
+    await handleDemoGithubUpload();
+  } catch (error) {
+    publishMessage.className = "mt-3 mb-0 small text-danger";
+    publishMessage.textContent = `Demo GitHub upload failed: ${error.message}`;
+  }
 });
 
 form?.addEventListener("submit", async (event) => {
