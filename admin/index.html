@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <!-- Google Tag Manager -->
+  <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-M42THLLQ');</script>
+  <!-- End Google Tag Manager -->
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-PHWVGJ3Q72"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-PHWVGJ3Q72');</script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="google-adsense-account" content="ca-pub-5731928992880799" />
+  <link rel="icon" type="image/png" href="https://res.cloudinary.com/dtrvtmpu5/image/upload/v1771616097/page_logo_s3j3kg.png" />
+  <link rel="apple-touch-icon" href="https://res.cloudinary.com/dtrvtmpu5/image/upload/v1771616097/page_logo_s3j3kg.png" />
+  <title>Admin Dashboard | Updaze News</title>
+  <meta name="robots" content="noindex,nofollow" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous" />
+  <link rel="stylesheet" href="../assets/css/style.css" />
+</head>
+<body class="admin-shell">
+  <!-- Google Tag Manager (noscript) -->
+  <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-M42THLLQ" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+  <!-- End Google Tag Manager (noscript) -->
+
+  <main class="container-fluid py-3">
+    <div class="row g-3">
+      <aside class="col-12 col-lg-3 col-xl-2">
+        <div class="card admin-panel p-3">
+          <h1 class="h5 mb-3 d-flex align-items-center gap-2"><img src="https://res.cloudinary.com/dtrvtmpu5/image/upload/v1771616097/page_logo_s3j3kg.png" alt="Updaze News logo" class="site-logo" /> <span>Updaze Admin</span></h1>
+          <nav class="nav flex-column gap-1">
+            <a class="nav-link active" href="/admin/index.html">Dashboard</a>
+            <a class="nav-link" href="/admin/my-articles.html">My Articles</a>
+            <a class="nav-link" href="/admin/publish.html">Publish Article</a>
+            <a class="nav-link" href="/admin/account.html">Manage My Account</a>
+            <a id="manageUsersLink" class="nav-link d-none" href="/admin/manage-users.html">Manage Users</a>
+            <a id="adminLogsLink" class="nav-link d-none" href="/admin/logs.html">System Logs</a>
+
+            <a id="footballDemoLink" class="nav-link d-none" href="/admin/football-demo.html">Football Demo</a>
+          </nav>
+          <hr />
+          <p id="adminUserLabel" class="small text-muted mb-2"></p>
+          <button id="logoutBtn" class="btn btn-outline-secondary btn-sm" type="button">Logout</button>
+        </div>
+      </aside>
+
+      <section class="col-12 col-lg-9 col-xl-10">
+        <div id="guardMessage" class="alert alert-warning d-none" role="alert"></div>
+        <section class="card admin-panel p-4 mb-4">
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+            <h2 class="h5 mb-0">Analytics Dashboard</h2>
+            <a class="btn btn-outline-primary btn-sm" href="/admin/publish.html">Go to Publish Page</a>
+          </div>
+          <p id="dashboardAnalyticsStatus" class="small text-muted mb-3">Loading analytics...</p>
+          <div class="row g-3 mb-3">
+            <div class="col-12 col-md-4"><div class="card p-3 h-100"><div class="small text-muted">Published Articles</div><div id="analyticsTotalArticles" class="h4 mb-0">0</div></div></div>
+            <div class="col-12 col-md-4"><div class="card p-3 h-100"><div class="small text-muted">Total Views</div><div id="analyticsTotalViews" class="h4 mb-0">0</div></div></div>
+            <div class="col-12 col-md-4"><div class="card p-3 h-100"><div class="small text-muted">Top Category</div><div id="analyticsTopCategory" class="h4 mb-0 text-uppercase">-</div></div></div>
+          </div>
+          <div class="row g-3">
+            <div class="col-12 col-lg-6"><div class="card p-3"><h3 class="h6">Articles by Category</h3><canvas id="categoryChart" height="220"></canvas></div></div>
+            <div class="col-12 col-lg-6"><div class="card p-3"><h3 class="h6">Top Viewed Articles</h3><canvas id="viewsChart" height="220"></canvas></div></div>
+          </div>
+        </section>
+        <section id="adminLogsSection" class="card admin-panel p-4 d-none">
+          <h2 class="h5 mb-2">Super Admin Activity Logs</h2>
+          <p id="adminLogsStatus" class="small text-muted mb-3">Loading logs...</p>
+          <div class="table-responsive">
+            <table class="table align-middle">
+              <thead>
+                <tr><th>Event</th><th>Status</th><th>User</th><th>Details</th><th>Time</th></tr>
+              </thead>
+              <tbody id="adminLogsBody"><tr><td colspan="5" class="text-muted">Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" crossorigin="anonymous"></script>
+  <script type="module" src="../assets/js/publish.js"></script>
+  <script src="../assets/js/cookie-consent.js"></script>
+</body>
+</html>

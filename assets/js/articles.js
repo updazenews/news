@@ -4,10 +4,9 @@ import {
   doc,
   getDoc,
   getDocs,
-  limit,
-  orderBy,
-  query,
-  where
+  increment,
+  serverTimestamp,
+  updateDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const fallbackArticles = [
@@ -19,20 +18,53 @@ const fallbackArticles = [
     category: "technology",
     author: "Updaze Desk",
     imageUrl: "",
+    status: "published",
+    viewCount: 0,
     publishedAt: { toDate: () => new Date() }
   }
 ];
 
+function parsePublishedAt(article) {
+  if (article?.publishedAt?.toDate) return article.publishedAt.toDate();
+  if (article?.publishedAt?.seconds) return new Date(article.publishedAt.seconds * 1000);
+  return new Date(article?.publishedAt || 0);
+}
+
+function sortByPublishedDateDesc(articles) {
+  return [...articles].sort((a, b) => parsePublishedAt(b) - parsePublishedAt(a));
+}
+
+export function getArticleViewCount(article) {
+  return Number.isFinite(Number(article?.viewCount)) ? Number(article.viewCount) : 0;
+}
+
 export async function fetchArticles(category = null) {
   try {
     const articlesRef = collection(db, "articles");
-    const constraints = [where("status", "==", "published"), orderBy("publishedAt", "desc"), limit(24)];
-    if (category) constraints.unshift(where("category", "==", category));
-    const snap = await getDocs(query(articlesRef, ...constraints));
-    return snap.docs.map((item) => item.data());
+    const snap = await getDocs(articlesRef);
+
+    const publishedArticles = snap.docs
+      .map((item) => item.data())
+      .filter((entry) => entry?.status === "published")
+      .filter((entry) => (category ? entry?.category === category : true));
+
+    return sortByPublishedDateDesc(publishedArticles).slice(0, 24);
   } catch {
     return category ? fallbackArticles.filter((entry) => entry.category === category) : fallbackArticles;
   }
+}
+
+export async function fetchMostViewedArticle() {
+  const articles = await fetchArticles();
+  if (!articles.length) return null;
+
+  return [...articles].sort((a, b) => getArticleViewCount(b) - getArticleViewCount(a))[0];
+}
+
+export async function fetchTopViewedArticles(limitCount = 3) {
+  const articles = await fetchArticles();
+  if (!articles.length) return [];
+  return [...articles].sort((a, b) => getArticleViewCount(b) - getArticleViewCount(a)).slice(0, Math.max(1, limitCount));
 }
 
 export async function fetchArticleBySlug(slug) {
@@ -45,6 +77,18 @@ export async function fetchArticleBySlug(slug) {
   }
 
   return fallbackArticles.find((entry) => entry.slug === slug) || null;
+}
+
+export async function incrementArticleView(slug) {
+  try {
+    const articleRef = doc(db, "articles", slug);
+    await updateDoc(articleRef, {
+      viewCount: increment(1),
+      updatedAt: serverTimestamp()
+    });
+  } catch {
+    // ignore view tracking failures
+  }
 }
 
 export function renderArticleCards(containerId, articles) {

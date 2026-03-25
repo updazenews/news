@@ -1,12 +1,21 @@
 :root {
-  --brand-primary: #0d6efd;
-  --brand-dark: #0f172a;
+  --brand-primary: #1f6da8;
+  --brand-primary-dark: #155180;
+  --brand-accent-purple: #8c3f97;
+  --brand-accent-orange: #e36a2a;
+  --brand-accent-green: #2e9b4b;
+  --brand-dark: #2f3136;
   --muted: #6c757d;
+
+  --bs-primary: var(--brand-primary);
+  --bs-primary-rgb: 31, 109, 168;
+  --bs-link-color: var(--brand-primary);
+  --bs-link-hover-color: var(--brand-primary-dark);
 }
 
 body {
   font-family: "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  color: #1f2937;
+  color: var(--brand-dark);
   background-color: #f8fafc;
 }
 
@@ -22,8 +31,37 @@ body {
 .hero-card {
   border: 0;
   border-radius: 0.9rem;
-  background: linear-gradient(135deg, #0d6efd, #4f46e5);
+  background: linear-gradient(130deg, var(--brand-primary), var(--brand-accent-purple) 58%, var(--brand-accent-orange));
   color: #fff;
+}
+
+.btn-primary {
+  --bs-btn-bg: var(--brand-primary);
+  --bs-btn-border-color: var(--brand-primary);
+  --bs-btn-hover-bg: var(--brand-primary-dark);
+  --bs-btn-hover-border-color: var(--brand-primary-dark);
+  --bs-btn-active-bg: #124469;
+  --bs-btn-active-border-color: #124469;
+}
+
+.btn-outline-primary {
+  --bs-btn-color: var(--brand-primary);
+  --bs-btn-border-color: var(--brand-primary);
+  --bs-btn-hover-bg: var(--brand-primary);
+  --bs-btn-hover-border-color: var(--brand-primary);
+}
+
+.text-primary {
+  color: var(--brand-primary) !important;
+}
+
+.navbar-brand {
+  color: var(--brand-dark) !important;
+}
+
+.navbar-brand:hover,
+.navbar-brand:focus {
+  color: var(--brand-primary) !important;
 }
 
 .article-card {
@@ -46,6 +84,7 @@ body {
 .section-title {
   font-weight: 700;
   margin-bottom: 1rem;
+  color: var(--brand-dark);
 }
 
 .site-footer {
@@ -53,6 +92,19 @@ body {
   color: #6b7280;
   background: #fff;
 }
+
+.social-links a {
+  color: var(--brand-primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.social-links a:hover,
+.social-links a:focus {
+  color: var(--brand-primary-dark);
+  text-decoration: underline;
+}
+
 
 .admin-shell {
   min-height: 100vh;
@@ -76,4 +128,725 @@ body {
   .main-content {
     margin-top: 4.5rem;
   }
+}
+
+.spinner-wrap {
+  min-height: 3rem;
+}
+
+
+.cookie-consent-banner {
+  position: fixed;
+  left: 1rem;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 1080;
+  background: #ffffff;
+  border: 1px solid #dbe2ea;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.15);
+  padding: 0.9rem 1rem;
+}
+
+.cookie-consent-content {
+  display: flex;
+  gap: 0.9rem;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  color: var(--brand-dark);
+}
+
+.cookie-consent-content p {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.cookie-consent-content a {
+  color: var(--brand-primary);
+}
+
+
+.editor-toolbar {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.article-image-caption {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin-top: -0.5rem;
+  margin-bottom: 1rem;
+}
+
+.site-logo {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  border-radius: 0.4rem;
+}
+
+
+.login-logo {
+  width: 64px;
+  height: 64px;
+}
+
+
+.top-story-carousel-item {
+  min-height: 360px;
+  background-size: cover;
+  background-position: center;
+  border-radius: 0.9rem;
+}
+
+.top-story-overlay {
+  min-height: 360px;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+#topStoryCarousel .carousel-control-prev,
+#topStoryCarousel .carousel-control-next {
+  width: 8%;
+}
+
+
+.article-inline-table th,
+.article-inline-table td {
+  background: #fff;
+  vertical-align: top;
+}
+
+.editor-preview .article-inline-table {
+  margin-bottom: 0;
+}
+
+.weather-search-wrap {
+  max-width: 840px;
+  border: 0;
+  border-radius: 1rem;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+}
+
+.weather-search-box {
+  width: min(100%, 620px);
+}
+
+.weather-suggestions {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.weather-day-card {
+  border-radius: 0.85rem;
+  border: 1px solid #dbe2ea;
+}
+
+.weather-page {
+  background: radial-gradient(circle at top right, #111827, #030712 60%, #000 100%);
+  min-height: 100vh;
+  color: #f8fafc;
+  overflow-x: hidden;
+}
+
+.weather-cloud-layer {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  opacity: 0.34;
+  background-image:
+    radial-gradient(ellipse at 20% 30%, rgba(255, 255, 255, 0.12) 0 17%, transparent 18%),
+    radial-gradient(ellipse at 60% 15%, rgba(255, 255, 255, 0.15) 0 14%, transparent 15%),
+    radial-gradient(ellipse at 85% 35%, rgba(255, 255, 255, 0.1) 0 16%, transparent 17%);
+  background-size: 900px 380px;
+  animation: driftClouds 42s linear infinite;
+}
+
+.weather-cloud-layer-two {
+  opacity: 0.2;
+  transform: scale(1.2);
+  animation-duration: 65s;
+  animation-direction: reverse;
+}
+
+@keyframes driftClouds {
+  from { background-position: 0 0; }
+  to { background-position: 1400px 120px; }
+}
+
+.weather-navbar {
+  background: rgba(2, 6, 23, 0.86);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  backdrop-filter: blur(6px);
+}
+
+.weather-navbar .nav-link,
+.weather-navbar .navbar-brand {
+  color: #f8fafc !important;
+}
+
+.weather-main {
+  position: relative;
+  z-index: 1;
+}
+
+.weather-glass {
+  background: rgba(15, 23, 42, 0.72) !important;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.35);
+  color: #f8fafc;
+}
+
+.weather-dashboard {
+  border-radius: 1rem;
+  padding: 1.5rem;
+}
+
+.weather-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.2rem;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.weather-top-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.current-weather-icon {
+  font-size: 3.2rem;
+}
+
+.temp-unit {
+  font-size: 2rem;
+  color: #facc15;
+  margin-left: 0.2rem;
+}
+
+.weather-metrics {
+  line-height: 1.45;
+  color: #cbd5e1;
+}
+
+.weather-city {
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+.weather-date {
+  font-size: 1.25rem;
+  color: #d1d5db;
+}
+
+.weather-condition {
+  font-size: 1.6rem;
+}
+
+.weather-tabs-row {
+  display: flex;
+  gap: 1.2rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+  padding-bottom: 0.45rem;
+}
+
+.weather-tabs-row span {
+  color: #d1d5db;
+}
+
+.weather-tabs-row span.active {
+  color: #fde047;
+  border-bottom: 3px solid #facc15;
+  padding-bottom: 0.35rem;
+}
+
+.weather-trend {
+  position: relative;
+}
+
+#trendChart {
+  width: 100%;
+  height: 130px;
+  display: block;
+}
+
+.trend-line {
+  fill: none;
+  stroke: #facc15;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.trend-area {
+  fill: rgba(250, 204, 21, 0.18);
+}
+
+.trend-values,
+.trend-labels {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  font-size: 0.92rem;
+}
+
+.trend-values {
+  color: #f8fafc;
+  margin-top: -0.4rem;
+  margin-bottom: 0.25rem;
+}
+
+.trend-labels {
+  color: #cbd5e1;
+}
+
+.weather-daily-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.85rem;
+}
+
+.weather-day-item {
+  background: rgba(248, 250, 252, 0.08);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 0.9rem;
+  padding: 0.75rem;
+  text-align: center;
+}
+
+.weather-day-item .day-name {
+  font-size: 1.5rem;
+  margin-bottom: 0.3rem;
+}
+
+.weather-day-item .day-icon {
+  font-size: 2rem;
+  line-height: 1.1;
+}
+
+.weather-day-item .day-temp {
+  font-size: 1.45rem;
+  margin: 0.25rem 0 0;
+}
+
+.weather-day-item .day-temp span {
+  color: #cbd5e1;
+}
+
+.weather-footer {
+  background: rgba(2, 6, 23, 0.86);
+  color: #cbd5e1;
+}
+
+.football-match-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.football-match-card {
+  background: #f2f1f1;
+  border-radius: 1rem;
+  border: 1px solid #dfdddd;
+  padding: 0;
+  overflow: hidden;
+}
+
+.football-match-head {
+  display: flex;
+  justify-content: space-between;
+  padding: 1rem 1.2rem;
+  font-size: 1.15rem;
+  border-bottom: 1px solid #d6d3d3;
+}
+
+.football-league-name {
+  margin: 1rem 1.2rem 0;
+  color: #6b7280;
+  font-size: 1.2rem;
+}
+
+.football-match-date {
+  margin: 0.7rem 0 0.3rem;
+  text-align: center;
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.football-score-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto minmax(220px, 1fr);
+  align-items: center;
+  gap: 1rem;
+  padding: 0.2rem 1.2rem 0.7rem;
+}
+
+.football-team {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.football-team-right {
+  justify-content: flex-end;
+}
+
+.football-team-logo {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid #d1d5db;
+}
+
+.football-team-name {
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.football-center-score {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.football-score-number,
+.football-score-dash {
+  font-size: 3.3rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.football-goals-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0 1.2rem;
+  color: #555;
+  font-size: 1.2rem;
+}
+
+.football-venue {
+  margin: 0.9rem 1.2rem 1.2rem;
+  color: #666;
+  font-size: 1.15rem;
+}
+
+.football-admin-page {
+  background: radial-gradient(circle at top right, #e5ecff, #f5f7fb 45%, #edf2fb);
+}
+
+.football-hero {
+  border: 0;
+  background: linear-gradient(130deg, #0f172a, #1e3a8a 55%, #2563eb);
+  color: #fff;
+}
+
+.football-pill {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.football-surface {
+  background: #ffffff;
+}
+
+.football-section-badge {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #2563eb;
+  background: #eff6ff;
+  border: 1px solid #dbeafe;
+  border-radius: 999px;
+  padding: 0.25rem 0.65rem;
+}
+
+.football-match-card {
+  background: linear-gradient(180deg, #f8fafc, #f1f5f9);
+  border-color: #dde3ec;
+}
+
+.football-match-date {
+  color: #111827;
+}
+
+@media (max-width: 992px) {
+  .football-score-row {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  .football-team,
+  .football-team-right {
+    justify-content: center;
+  }
+
+  .football-goals-row {
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
+.football-board {
+  background: #ffffff;
+  border: 1px solid #d8dee8;
+  border-radius: 0.8rem;
+  overflow: hidden;
+}
+
+.football-board-header {
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f8fafc;
+}
+
+.football-board-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.football-board-lines {
+  display: grid;
+}
+
+.football-board-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto minmax(220px, 1fr);
+  align-items: center;
+  gap: 1rem;
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.football-board-row:last-child {
+  border-bottom: 0;
+}
+
+.football-board-team {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.football-board-away {
+  justify-content: flex-end;
+}
+
+.football-board-logo {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
+.football-board-name {
+  font-size: 1.85rem;
+  font-weight: 500;
+}
+
+.football-board-center {
+  text-align: center;
+  min-width: 120px;
+}
+
+.football-board-main {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.football-board-status {
+  margin-top: 0.2rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: #1d4ed8;
+  font-weight: 700;
+}
+
+.football-board-footer {
+  grid-column: 1 / -1;
+  color: #6b7280;
+  font-size: 1rem;
+  text-align: center;
+  margin-top: -0.2rem;
+}
+
+.football-team-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.8rem;
+}
+
+.football-team-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid #dbe3f0;
+  border-radius: 0.7rem;
+  background: #f8fbff;
+}
+
+.football-team-card-logo {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+}
+
+.football-team-card-name {
+  font-weight: 600;
+}
+
+.football-standings-table th {
+  background: #f8fafc;
+  color: #374151;
+}
+
+.football-event-list {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.football-event-card {
+  border: 1px solid #dbe3f0;
+  border-radius: 0.7rem;
+  padding: 0.85rem 1rem;
+  background: #f8fbff;
+}
+
+.football-event-top {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) auto minmax(160px, 1fr);
+  gap: 0.8rem;
+  align-items: center;
+}
+
+.football-event-team {
+  font-weight: 600;
+}
+
+.football-event-score {
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.football-event-meta {
+  margin-top: 0.4rem;
+  color: #6b7280;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  font-size: 0.9rem;
+  flex-wrap: wrap;
+}
+
+.sports-nav-menu .dropdown-menu {
+  max-height: 22rem;
+  overflow-y: auto;
+}
+
+.sports-dropend .dropdown-toggle::after {
+  float: right;
+  margin-top: 0.55rem;
+}
+
+.sports-team-logo {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.sports-event-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+  background: #fff;
+}
+
+.sports-event-teams {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+
+.sports-event-meta {
+  margin-top: 0.4rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+.sports-league-badge {
+  width: 68px;
+  height: 68px;
+  object-fit: contain;
+  border-radius: 0.8rem;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  padding: 0.35rem;
+}
+
+.team-link-btn {
+  text-decoration: none;
+  color: var(--brand-dark);
+  font-weight: 600;
+}
+
+.team-link-btn:hover,
+.team-link-btn:focus {
+  color: var(--brand-primary);
+  text-decoration: underline;
+}
+
+.sports-team-detail-badge {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  border-radius: 0.85rem;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  padding: 0.4rem;
+}
+
+
+.article-quote {
+  margin: 1rem 0;
+  padding: 0.85rem 1rem;
+  border-left: 4px solid var(--brand-primary);
+  background: #f1f7fd;
+  border-radius: 0.35rem;
+  color: #1f2937;
+  font-style: italic;
+}
+
+.article-quote p:last-child {
+  margin-bottom: 0;
+}
+
+
+.article-inline-image {
+  display: block;
+  margin: 1rem auto;
+  max-height: 480px;
+  width: auto;
 }
