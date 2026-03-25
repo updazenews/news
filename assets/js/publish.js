@@ -331,6 +331,99 @@ async function handleDemoDownload() {
   publishMessage.textContent = `Demo static file downloaded: ${slug}.html`;
 }
 
+async function fetchGithubUploadToken() {
+  const tokenSnap = await getDoc(doc(db, "tokens", "github_upload"));
+  if (!tokenSnap.exists()) throw new Error("Firestore token document tokens/github_upload not found.");
+  const token = `${tokenSnap.data()?.value || ""}`.trim();
+  if (!token) throw new Error("GitHub token in tokens/github_upload.value is empty.");
+  return token;
+}
+
+function toBase64Unicode(value = "") {
+  return btoa(unescape(encodeURIComponent(value)));
+}
+
+function normalizeGithubDestination(ownerInput = "", repoInput = "", targetPathInput = "articles/") {
+  let owner = ownerInput.trim();
+  let repoRaw = repoInput.trim().replace(/^https?:\/\/github\.com\//i, "").replace(/^github\.com\//i, "");
+  let extraPath = "";
+
+  const segments = repoRaw.split("/").filter(Boolean);
+  if (!owner && segments.length >= 2) {
+    owner = segments.shift();
+  }
+  if (segments.length >= 1) {
+    repoRaw = segments.shift();
+    extraPath = segments.join("/");
+  }
+
+  const normalizedBasePath = `${targetPathInput}`.trim().replace(/^\/+/, "").replace(/\/?$/, "/");
+  const mergedPath = `${extraPath ? `${extraPath}/` : ""}${normalizedBasePath}`.replace(/\/{2,}/g, "/");
+  return { owner, repo: repoRaw, pathPrefix: mergedPath };
+}
+
+async function handleDemoGithubUpload() {
+  const { slug, article } = collectDraftArticle();
+  if (!slug || !article.title || !article.content || !article.excerpt) throw new Error("Fill in title, excerpt, and content before GitHub upload.");
+
+  const ownerInput = document.getElementById("demoGithubOwner")?.value?.trim() || "";
+  const repoInput = document.getElementById("demoGithubRepo")?.value?.trim() || "";
+  const branch = document.getElementById("demoGithubBranch")?.value?.trim() || "main";
+  const targetPathInput = document.getElementById("demoGithubPath")?.value?.trim() || "articles/";
+  const { owner, repo, pathPrefix } = normalizeGithubDestination(ownerInput, repoInput, targetPathInput);
+  if (!owner || !repo) throw new Error("GitHub owner and repository are required.");
+  const targetPath = `${pathPrefix}${slug}.html`;
+
+  const token = await fetchGithubUploadToken();
+  const html = buildStaticArticleHtml(article, slug);
+  const encodedPath = targetPath.split("/").map(encodeURIComponent).join("/");
+  const repoApiBase = `https://api.github.com/repos/${owner}/${repo}`;
+  const apiUrl = `${repoApiBase}/contents/${encodedPath}`;
+  const headers = { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" };
+
+  const repoCheck = await fetch(repoApiBase, { headers });
+  if (!repoCheck.ok) {
+    if (repoCheck.status === 404) {
+      throw new Error(`Repository "${owner}/${repo}" was not found for this token. Verify owner/repo and ensure token has repository access.`);
+    }
+    throw new Error(`GitHub repository check failed: ${repoCheck.status} ${repoCheck.statusText}`);
+  }
+
+  let currentSha = "";
+  const existing = await fetch(`${apiUrl}?ref=${encodeURIComponent(branch)}`, { headers });
+  if (existing.ok) {
+    const payload = await existing.json();
+    currentSha = payload.sha || "";
+  } else if (existing.status !== 404) {
+    throw new Error(`GitHub lookup failed: ${existing.status} ${existing.statusText}`);
+  }
+
+  const uploadResponse = await fetch(apiUrl, {
+    method: "PUT",
+    headers: { ...headers, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      message: `demo: publish static news page for ${slug}`,
+      content: toBase64Unicode(html),
+      branch,
+      ...(currentSha ? { sha: currentSha } : {})
+    })
+  });
+
+  if (!uploadResponse.ok) {
+    const failure = await uploadResponse.text();
+    if (uploadResponse.status === 404) {
+      throw new Error(`GitHub upload failed with 404. Confirm branch "${branch}" exists and token can write contents in ${owner}/${repo}. Raw response: ${failure}`);
+    }
+    throw new Error(`GitHub upload failed: ${uploadResponse.status} ${failure}`);
+  }
+  const uploadPayload = await uploadResponse.json();
+  const url = uploadPayload?.content?.html_url || `https://github.com/${owner}/${repo}/blob/${branch}/${targetPath}`;
+  publishMessage.className = "mt-3 mb-0 small text-success";
+  publishMessage.textContent = `Demo upload complete: ${url}`;
+  await logAdminAction("github_demo_upload", `Uploaded ${targetPath} on ${owner}/${repo}@${branch}`);
+}
+
+
 function applyEditorFormat(type) {
   const contentField = document.getElementById("content");
   if (!contentField) return;
@@ -697,9 +790,14 @@ demoDownloadBtn?.addEventListener("click", async () => {
 });
 
 demoGithubUploadBtn?.addEventListener("click", async () => {
-  window.open("/admin/cms/", "_blank", "noopener");
-  publishMessage.className = "mt-3 mb-0 small text-info";
-  publishMessage.textContent = "Opened Decap CMS. Use OAuth publishing there to avoid browser CORS issues.";
+  publishMessage.className = "mt-3 mb-0 small text-muted";
+  publishMessage.textContent = "Uploading demo HTML to GitHub...";
+  try {
+    await handleDemoGithubUpload();
+  } catch (error) {
+    publishMessage.className = "mt-3 mb-0 small text-danger";
+    publishMessage.textContent = `Demo GitHub upload failed: ${error.message}`;
+  }
 });
 
 form?.addEventListener("submit", async (event) => {
