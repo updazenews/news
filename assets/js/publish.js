@@ -343,17 +343,36 @@ function toBase64Unicode(value = "") {
   return btoa(unescape(encodeURIComponent(value)));
 }
 
+function normalizeGithubDestination(ownerInput = "", repoInput = "", targetPathInput = "articles/") {
+  let owner = ownerInput.trim();
+  let repoRaw = repoInput.trim().replace(/^https?:\/\/github\.com\//i, "").replace(/^github\.com\//i, "");
+  let extraPath = "";
+
+  const segments = repoRaw.split("/").filter(Boolean);
+  if (!owner && segments.length >= 2) {
+    owner = segments.shift();
+  }
+  if (segments.length >= 1) {
+    repoRaw = segments.shift();
+    extraPath = segments.join("/");
+  }
+
+  const normalizedBasePath = `${targetPathInput}`.trim().replace(/^\/+/, "").replace(/\/?$/, "/");
+  const mergedPath = `${extraPath ? `${extraPath}/` : ""}${normalizedBasePath}`.replace(/\/{2,}/g, "/");
+  return { owner, repo: repoRaw, pathPrefix: mergedPath };
+}
+
 async function handleDemoGithubUpload() {
   const { slug, article } = collectDraftArticle();
   if (!slug || !article.title || !article.content || !article.excerpt) throw new Error("Fill in title, excerpt, and content before GitHub upload.");
 
-  const owner = document.getElementById("demoGithubOwner")?.value?.trim();
-  const repo = document.getElementById("demoGithubRepo")?.value?.trim();
+  const ownerInput = document.getElementById("demoGithubOwner")?.value?.trim() || "";
+  const repoInput = document.getElementById("demoGithubRepo")?.value?.trim() || "";
   const branch = document.getElementById("demoGithubBranch")?.value?.trim() || "main";
   const targetPathInput = document.getElementById("demoGithubPath")?.value?.trim() || "articles/";
-  const normalizedPrefix = targetPathInput.replace(/^\/+/, "").replace(/\/?$/, "/");
+  const { owner, repo, pathPrefix } = normalizeGithubDestination(ownerInput, repoInput, targetPathInput);
   if (!owner || !repo) throw new Error("GitHub owner and repository are required.");
-  const targetPath = `${normalizedPrefix}${slug}.html`;
+  const targetPath = `${pathPrefix}${slug}.html`;
 
   const token = await fetchGithubUploadToken();
   const html = buildStaticArticleHtml(article, slug);
